@@ -1,1 +1,1 @@
-This is the Main Branch of the Senior Project
+This is Trenton Griffiths branch for the Senior project
