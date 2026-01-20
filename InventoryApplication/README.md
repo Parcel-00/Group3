@@ -1,1 +1,1 @@
-This is the Main Branch of the Senior Project
+This is the Data Structures Branch for the Senior Project
