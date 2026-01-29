@@ -1,1 +1,1 @@
-This is the Main Branch of the Senior Project
+This is the Recognition branch of the Senior Project
