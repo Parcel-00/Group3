@@ -36,22 +36,38 @@ def load_image(path):
     return img
 
 root = tk.Tk()
-#root.withdraw()  # this will hide the empty tkinter window but for testing I leave it
+root.withdraw()  # this will hide the empty tkinter window but for testing I leave it
 
+'''
 path = filedialog.askopenfilename(
     title="Select an image",
     filetypes=[
         ("Image files", "*.png *.jpg *.jpeg"),
         ("All files", "*.*")
     ]
+) '''
+
+'''
+This is the difference, names instead of name. 
+This allows a range of files to be picked
+'''
+
+paths = filedialog.askopenfilenames(
+    title = "Select an image",
+    filetypes=[
+        ("Image files", "*.png *.jpg *.jpeg"),
+        ("All files", "*.*")
+    ]
 )
 
-if not path:
+if not paths:
     raise RuntimeError("No file selected")
 
-img = load_image(path)
-#img = load_image(r"C:\Users\trent\EclipseProjects\Senior_Project\InventoryApplication\images\imagesConverted\IMG_5971.png")     
-
-plt.imshow(img.numpy())
-plt.axis("off")
-plt.show()   
+for path in paths: #important to use loop as it expects one for every file
+    img = load_image(path)
+    #img = load_image(r"C:\Users\trent\EclipseProjects\Senior_Project\InventoryApplication\images\imagesConverted\IMG_5971.png")     
+    
+    plt.imshow(img.numpy())
+    plt.title(path.split("/")[-1]) #this is required to split multiple fileNames (crashes otherwise)
+    plt.axis("off")
+    plt.show()   
