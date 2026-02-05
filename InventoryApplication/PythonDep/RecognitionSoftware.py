@@ -22,7 +22,8 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
-#import os
+import math
+import os
 
 
 IMG_SIZE = (224, 224)
@@ -59,15 +60,31 @@ paths = filedialog.askopenfilenames(
         ("All files", "*.*")
     ]
 )
+# paths = paths[:16] #if we wanted to limit the number of files selected
+# paths = sorted(paths) if we wanted to sort each file
 
 if not paths:
     raise RuntimeError("No file selected")
 
-for path in paths: #important to use loop as it expects one for every file
+#this is a grid layout
+num_images = len(paths)
+cols = math.ceil(math.sqrt(num_images))
+rows = math.ceil(num_images / cols)
+
+plt.figure(figsize=(cols * 3, rows * 3))
+
+#for path in paths: #important to use loop as it expects one for every file
+for i, path in enumerate(paths):
     img = load_image(path)
     #img = load_image(r"C:\Users\trent\EclipseProjects\Senior_Project\InventoryApplication\images\imagesConverted\IMG_5971.png")     
     
+    plt.subplot(rows, cols, i + 1)
+
     plt.imshow(img.numpy())
-    plt.title(path.split("/")[-1]) #this is required to split multiple fileNames (crashes otherwise)
+    plt.title(os.path.basename(path), fontsize=8)
+
+    #plt.title(path.split("/")[-1]) #this is required to split multiple fileNames (crashes otherwise)
     plt.axis("off")
-    plt.show()   
+    
+plt.tight_layout()
+plt.show()   
