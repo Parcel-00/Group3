@@ -52,7 +52,7 @@ path = filedialog.askopenfilename(
 This is the difference, names instead of name. 
 This allows a range of files to be picked
 '''
-
+''' # This is if we wish to go the direction of individual files instead of fodlers
 paths = filedialog.askopenfilenames(
     title = "Select an image",
     filetypes=[
@@ -65,6 +65,25 @@ paths = filedialog.askopenfilenames(
 
 if not paths:
     raise RuntimeError("No file selected")
+'''
+#This is if we wish to go through the single folder selection option
+folder = filedialog.askdirectory(title="Select image folder") #ask for directory
+
+if not folder:
+    raise RuntimeError("No folder selected")
+
+# ---- Collect image files ----
+paths = [
+    os.path.join(folder, f)
+    for f in os.listdir(folder)
+    #if f.lower().endswith(IMAGE_EXTS)
+]
+
+if not paths:
+    raise RuntimeError("No image files found in folder")
+
+print(f"Loaded {len(paths)} images from:\n{folder}")
+
 
 #this is a grid layout
 num_images = len(paths)
