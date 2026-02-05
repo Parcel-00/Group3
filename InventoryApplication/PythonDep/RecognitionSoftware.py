@@ -27,7 +27,10 @@ import os
 
 
 IMG_SIZE = (224, 224)
+#this is to make sure we are reading real image files
+IMAGE_EXTS = (".png", ".jpg", ".jpeg")
 
+#Method to load the images to fit the table
 def load_image(path):
     img = tf.io.read_file(path)
     img = tf.image.decode_image(img, channels=3)
@@ -76,21 +79,31 @@ if not folder:
 paths = [
     os.path.join(folder, f)
     for f in os.listdir(folder)
-    #if f.lower().endswith(IMAGE_EXTS)
+    if f.lower().endswith(IMAGE_EXTS) #added to make sure we are reading image files
 ]
 
 if not paths:
     raise RuntimeError("No image files found in folder")
 
+#a line to print verification that the folder was loaded well
 print(f"Loaded {len(paths)} images from:\n{folder}")
 
+#may need to add checker for bad files
+'''
+for path in paths:
+    try:
+        img = load_image(path)
+    except Exception as e:
+        print(f"Skipping {path}: {e}")
+        continue
+'''
 
 #this is a grid layout
 num_images = len(paths)
 cols = math.ceil(math.sqrt(num_images))
 rows = math.ceil(num_images / cols)
 
-plt.figure(figsize=(cols * 3, rows * 3))
+plt.figure(figsize=(cols * 3, rows * 3)) #adds a figure display for the window
 
 #for path in paths: #important to use loop as it expects one for every file
 for i, path in enumerate(paths):
@@ -100,7 +113,7 @@ for i, path in enumerate(paths):
     plt.subplot(rows, cols, i + 1)
 
     plt.imshow(img.numpy())
-    plt.title(os.path.basename(path), fontsize=8)
+    plt.title(os.path.basename(path), fontsize=8) #add titles to each image
 
     #plt.title(path.split("/")[-1]) #this is required to split multiple fileNames (crashes otherwise)
     plt.axis("off")
