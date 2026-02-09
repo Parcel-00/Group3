@@ -1,0 +1,134 @@
+[
+  {
+    "filename": "Container:1",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5971.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.6037892699241638,
+    "std_pixel": 0.14906629920005798
+  },
+  {
+    "filename": "Container:2",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5972.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.611112654209137,
+    "std_pixel": 0.14631234109401703
+  },
+  {
+    "filename": "Container:3",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5973.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.621638834476471,
+    "std_pixel": 0.14736440777778625
+  },
+  {
+    "filename": "Container:4",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5974.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.5725253224372864,
+    "std_pixel": 0.12695717811584473
+  },
+  {
+    "filename": "Container:5",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5975.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.6121531128883362,
+    "std_pixel": 0.1429934948682785
+  },
+  {
+    "filename": "Container:6",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5976.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.5852193236351013,
+    "std_pixel": 0.14498989284038544
+  },
+  {
+    "filename": "Container:7",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5977.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.5956512093544006,
+    "std_pixel": 0.16065533459186554
+  },
+  {
+    "filename": "Container:8",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5978.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.6174067258834839,
+    "std_pixel": 0.15962345898151398
+  },
+  {
+    "filename": "Container:9",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5979.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.6153780221939087,
+    "std_pixel": 0.14893533289432526
+  },
+  {
+    "filename": "Container:10",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5980.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.6026089787483215,
+    "std_pixel": 0.157454252243042
+  },
+  {
+    "filename": "Container:11",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5981.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.6134358644485474,
+    "std_pixel": 0.12885981798171997
+  },
+  {
+    "filename": "Container:12",
+    "path": "C:/Users/trent/EclipseProjects/Senior_Project/InventoryApplication/images/imagesConverted\\IMG_5982.png",
+    "shape": [
+      224,
+      224,
+      3
+    ],
+    "mean_pixel": 0.600311815738678,
+    "std_pixel": 0.1679612547159195
+  }
+]
