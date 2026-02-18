@@ -158,6 +158,9 @@ function App() {
     if (error) {
       setLoginMsg({ type: "bad", text: error.message });
     } else {
+      setEmail("");
+      setPassword("");
+      setLoginMode("signin");
       setLoginMsg({ type: "ok", text: "Signed out." });
     }
   };
