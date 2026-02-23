@@ -1,0 +1,18 @@
+Shipping container 11 - manifest
+Country of origin: Mexico
+Port of loading: Veracruz, Mexico
+Port of discharge: Houston, TX, USA
+Destination: Chicago, IL, USA
+Container ID: EMCU2233445
+ISO size/type: 40HC
+Container ownership: Evergreen Marine
+Condition at first receipt: Used (Minor rust)
+Tare mass: 3,900 kg / 8,600 lbs
+Max gross mass: 30,480 kg / 67,208 lbs
+Inventory
+- Item: Avocados
+- Item code: HS 0804.40
+- Quantity: 800 units
+- Packaging: 800 boxes
+- Net mass: 16,000 kg / 35,280 lbs
+- Gross mass: 17,000 kg / 37,485 lbs

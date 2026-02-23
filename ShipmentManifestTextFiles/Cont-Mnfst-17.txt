@@ -1,0 +1,18 @@
+Shipping container 17 - manifest
+Country of origin: Italy
+Port of loading: Genoa, Italy
+Port of discharge: New York City, NY, USA
+Destination: Boston, MA, USA
+Container ID: CMAU9900112
+ISO size/type: 40HC
+Container ownership: CMA CGM
+Condition at first receipt: Used
+Tare mass: 3,900 kg / 8,600 lbs
+Max gross mass: 30,480 kg / 67,208 lbs
+Inventory
+- Item: Olive Oil
+- Item code: HS 1509.10
+- Quantity: 300 units
+- Packaging: 300 bottles in cases
+- Net mass: 4,500 kg / 9,922 lbs
+- Gross mass: 5,000 kg / 11,025 lbs

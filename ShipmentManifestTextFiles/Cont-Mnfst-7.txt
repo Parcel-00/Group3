@@ -1,0 +1,18 @@
+Shipping container 7 - manifest
+Country of origin: USA
+Port of loading: New York City, NY, USA
+Port of discharge: Antwerp, Belgium
+Destination: Paris, France
+Container ID: MAEU5678901
+ISO size/type: 40GP
+Container ownership: Maersk
+Condition at first receipt: New (Sound)
+Tare mass: 3,800 kg / 8,379 lbs
+Max gross mass: 30,480 kg / 67,208 lbs
+Inventory
+- Item: Pharmaceuticals
+- Item code: HS 3004.90
+- Quantity: 400 units
+- Packaging: 400 boxes
+- Net mass: 2,000 kg / 4,410 lbs
+- Gross mass: 2,500 kg / 5,512 lbs

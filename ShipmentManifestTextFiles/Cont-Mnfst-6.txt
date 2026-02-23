@@ -1,0 +1,18 @@
+Shipping container 6 - manifest
+Country of origin: Brazil
+Port of loading: Santos, Brazil
+Port of discharge: Miami, FL, USA
+Destination: Houston, TX, USA
+Container ID: ONEY1122334
+ISO size/type: 20OT (Open Top)
+Container ownership: Ocean Network Express (ONE)
+Condition at first receipt: Used
+Tare mass: 2,500 kg / 5,512 lbs
+Max gross mass: 24,000 kg / 52,920 lbs
+Inventory
+- Item: Coffee beans
+- Item code: HS 0901.11
+- Quantity: 300 units
+- Packaging: 300 sacks
+- Net mass: 18,000 kg / 39,690 lbs
+- Gross mass: 18,500 kg / 40,792 lbs

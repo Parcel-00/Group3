@@ -1,0 +1,18 @@
+Shipping container 5 - manifest
+Country of origin: India
+Port of loading: Mumbai, India
+Port of discharge: Dubai, UAE
+Destination: Riyadh, Saudi Arabia
+Container ID: CMAU4567890
+ISO size/type: 40RF (Reefer Container)
+Container ownership: CMA CGM
+Condition at first receipt: Used (minor dents)
+Tare mass: 4,500 kg / 9,922 lbs
+Max gross mass: 30,480 kg / 67,208 lbs
+Inventory
+- Item: Mangoes
+- Item code: HS 0804.50
+- Quantity: 1,000 units
+- Packaging: 1,000 crates
+- Net mass: 15,000 kg / 33,075 lbs
+- Gross mass: 18,000 kg / 39,690 lbs

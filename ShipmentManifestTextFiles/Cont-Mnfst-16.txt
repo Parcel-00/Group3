@@ -1,0 +1,18 @@
+Shipping container 16 - manifest
+Country of origin: Thailand
+Port of loading: Bangkok, Thailand
+Port of discharge: Singapore
+Destination: Kuala Lumpur, Malaysia
+Container ID: HLCU7788990
+ISO size/type: 40RF
+Container ownership: Hapag-Lloyd
+Condition at first receipt: New (Sound)
+Tare mass: 3,000 kg / 6,615 lbs
+Max gross mass: 24,000 kg / 52,920 lbs
+Inventory
+- Item: Rice
+- Item code: HS 1006.30
+- Quantity: 500 units
+- Packaging: 500 sacks
+- Net mass: 25,000 kg / 55,125 lbs
+- Gross mass: 25,500 kg / 56,228 lbs

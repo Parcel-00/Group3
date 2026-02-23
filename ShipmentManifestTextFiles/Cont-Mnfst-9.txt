@@ -1,0 +1,18 @@
+Shipping container 9 - manifest
+Country of origin: Australia
+Port of loading: Sydney, NSW, Australia
+Port of discharge: Shanghai, China
+Destination: Beijing, China
+Container ID: PILU3344556
+ISO size/type: 40OT
+Container ownership: Pacific International Lines (PIL)
+Condition at first receipt: Used
+Tare mass: 4,200 kg / 9,261 lbs
+Max gross mass: 30,480 kg / 67,208 lbs
+Inventory
+- Item: Wool
+- Item code: HS 5101.11
+- Quantity: 250 units
+- Packaging: 250 bales
+- Net mass: 20,000 kg / 44,100 lbs
+- Gross mass: 21,000 kg / 46,305 lbs

@@ -1,0 +1,18 @@
+Shipping container 10 - manifest
+Country of origin: South Africa
+Port of loading: Cape Town, South Africa
+Port of discharge: Rotterdam, Netherlands
+Destination: Amsterdam, Netherlands
+Container ID: ZIMU7788990
+ISO size/type: 20GP
+Container ownership: Zim Integrated Shipping
+Condition at first receipt: New (Sound)
+Tare mass: 2,300 kg / 5,072 lbs
+Max gross mass: 24,000 kg / 52,920 lbs
+Inventory
+- Item: Wine
+- Item code: HS 2204.21
+- Quantity: 600 units
+- Packaging: 600 cases
+- Net mass: 9,000 kg / 19,845 lbs
+- Gross mass: 10,000 kg / 22,050 lbs

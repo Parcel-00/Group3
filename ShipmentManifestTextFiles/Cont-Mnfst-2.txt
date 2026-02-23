@@ -1,0 +1,18 @@
+Shipping container 2 - manifest
+Country of origin: Viet Nam
+Port of loading: Haiphong, Viet Nam
+Port of discharge: Los Angeles, CA, USA
+Destination: Long Beach, CA, USA
+Container ID: TCLU5492810
+ISO size/type: 40HC (High Cube Dry)
+Container ownership: TAL International
+Condition at first receipt: Used (sound)
+Tare mass: 3,820 kg / 8,421 lbs
+Max gross mass: 32,500 kg / 71,650 lbs
+Inventory
+- Item: Wireless Bluetooth Headphones
+- Item code: HS 8518.30
+- Quantity: 1,440 units
+- Packaging: 120 cartons
+- Net mass: 1,224 kg / 2,698 lbs
+- Gross mass: 1,350 kg / 2,976 lbs

@@ -1,0 +1,18 @@
+Shipping container 18 - manifest
+Country of origin: Indonesia
+Port of loading: Jakarta, Indonesia
+Port of discharge: Sydney, NSW, Australia
+Destination: Melbourne, VIC, Australia
+Container ID: ONEY3344556
+ISO size/type: 20OT
+Container ownership: ONE
+Condition at first receipt: Used (minor damage)
+Tare mass: 2,500 kg / 5,513 lbs
+Max gross mass: 24,000 kg / 52,920 lbs
+Inventory
+- Item: Spices
+- Item code: HS 0910.99
+- Quantity: 200 units
+- Packaging: 200 bags
+- Net mass: 4,000 kg / 8,820 lbs
+- Gross mass: 4,500 kg / 9,922 lbs

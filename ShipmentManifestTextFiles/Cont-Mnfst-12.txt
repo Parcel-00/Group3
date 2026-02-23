@@ -1,0 +1,18 @@
+Shipping container 12 - manifest
+Country of origin: Türkiye
+Port of loading: Istanbul, Türkiye
+Port of discharge: Piraeus, Greece
+Destination: Athens, Greece
+Container ID: YMLU5566778
+ISO size/type: 20OT
+Container ownership: Yang Ming Marine
+Condition at first receipt: Used
+Tare mass: 2,500 kg / 5,512 lbs
+Max gross mass: 24,000 kg / 52,920 lbs
+Inventory
+- Item: Carpets
+- Item code: HS 5703.30
+- Quantity: 100 units
+- Packaging: 100 rolls
+- Net mass: 5,000 kg / 11,025 lbs
+- Gross mass: 5,500 kg / 12,128 lbs

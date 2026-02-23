@@ -1,0 +1,18 @@
+Shipping container 3 - manifest
+Country of origin: China
+Port of loading: Shanghai, China
+Port of discharge: Los Angeles, USA
+Destination: New York City, NY, USA
+Container ID: MSCU1234567
+ISO size/type: 40HC (High Cube Dry)
+Container ownership: Mediterranean Shipping Company (MSC)
+Condition at first receipt: Used (sound)
+Tare mass: 3,900 kg / 8,600 lbs
+Max gross mass: 30,480 kg / 67,208 lbs
+Inventory
+- Item: Smartphones
+- Item code: HS 8517.12
+- Quantity: 500 units
+- Packaging: 500 cartons
+- Net mass: 2,500 kg / 5,513 lbs
+- Gross mass: 3,000 kg / 6,615 lbs

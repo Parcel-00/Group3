@@ -1,0 +1,18 @@
+Shipping container 1 - manifest (counterfactual)
+Country of origin: Viet Nam
+Port of loading: Ho Chi Minh City, Viet Nam
+Port of discharge: Hamburg, Germany
+Destination: Hesse, Germany
+Container ID: ABCU1234567
+ISO size/type: 22G1 (High Cube Dry)
+Container ownership: Hapag Lloyd
+Condition at first receipt: New (sound)
+Tare mass: 2,280 kg / 5,030 lbs
+Max gross mass: 30,480 kg / 67,208 lbs
+Inventory
+- Item: Coffee grounds
+- Item code: ITM-NBT-24WS-01
+- Quantity: 500 units
+- Packaging: 40 bags
+- Net mass: 6,800 kg / 14,994 lbs
+- Gross mass: 7,200 kg / 15,876 lbs

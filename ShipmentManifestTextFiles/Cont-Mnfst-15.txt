@@ -1,0 +1,18 @@
+Shipping container 15 - manifest
+Country of origin: Russia
+Port of loading: St. Petersburg, Russia
+Port of discharge: Hamburg, Germany
+Destination: Berlin, Germany
+Container ID: MSCU4455667
+ISO size/type: 40GP
+Container ownership: MSC
+Condition at first receipt: Used (Sound)
+Tare mass: 3,800 kg / 8,379 lbs
+Max gross mass: 30,480 kg / 67,208 lbs
+Inventory
+- Item: Fertilizers
+- Item code: HS 3105.90
+- Quantity: 400 units
+- Packaging: 400 bags
+- Net mass: 20,000 kg / 44,100 lbs
+- Gross mass: 21,000 kg / 46,305 lbs

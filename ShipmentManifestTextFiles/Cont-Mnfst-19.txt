@@ -1,0 +1,18 @@
+Shipping container 19 - manifest
+Country of origin: Egypt
+Port of loading: Alexandria, Egypt
+Port of discharge: Marseille, France
+Destination: Lyon, France
+Container ID: MAEU6677889
+ISO size/type: 40GP
+Container ownership: Maersk
+Condition at first receipt: New (Sound)
+Tare mass: 3,800 kg / 8,379 lbs
+Max gross mass: 38,480 kg / 67,208 lbs
+Inventory
+- Item: Cotton
+- Item code: HS 5201.00
+- Quantity: 150 units
+- Packaging: 150 bales
+- Net mass: 22,500 kg / 49,612 lbs
+- Gross mass: 23,000 kg / 50,715 lbs

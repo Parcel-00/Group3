@@ -1,0 +1,18 @@
+Shipping container 13 - manifest
+Country of origin: Viet Nam
+Port of loading: Ho Chi Minh City, Viet Nam
+Port of discharge: Los Angeles, CA, USA
+Destination: San Francisco, CA, USA
+Container ID: COSU8899001
+ISO size/type: 40RF
+Container ownership: COSCO Shipping
+Condition at first receipt: New (Sound)
+Tare mass: 4,500 kg / 8,421 lbs
+Max gross mass: 30,480 kg / 67,208 lbs
+Inventory
+- Item: T-Shirts
+- Item code: HS 6109.10
+- Quantity: 1,200 units
+- Packaging: 1,200 cartons
+- Net mass: 6,000 kg / 13,230 lbs
+- Gross mass: 7,000 kg / 15,435 lbs

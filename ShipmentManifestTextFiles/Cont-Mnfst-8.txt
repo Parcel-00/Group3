@@ -1,0 +1,18 @@
+Shipping container 8 - manifest
+Country of origin: Japan
+Port of loading: Tokyo, Japan
+Port of discharge: Singapore
+Destination: Jakarta, Indonesia
+Container ID: KKLN9988776
+ISO size/type: 20RF
+Container ownership: K-Line
+Condition at first receipt: Used (Sound)
+Tare mass: 3,000 kg / 6,615 lbs
+Max gross mass: 24,000 kg / 52,920 lbs
+Inventory
+- Item: Frozen tuna
+- Item code: HS 0303.42
+- Quantity: 150 units
+- Packaging: 150 cartons
+- Net mass: 12,000 kg / 26,460 lbs
+- Gross mass: 13,000 kg / 28,665 lbs

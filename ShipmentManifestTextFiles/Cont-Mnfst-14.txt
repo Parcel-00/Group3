@@ -1,0 +1,18 @@
+Shipping container 14 - manifest
+Country of origin: Canada
+Port of loading: Vancouver, BC, Canada
+Port of discharge: Tokyo, Japan
+Destination: Osaka, Japan
+Container ID: APLU1122334
+ISO size/type: 20GP
+Container ownership: APL
+Condition at first receipt: Used
+Tare mass: 2,300 kg / 5,072 lbs
+Max gross mass: 24,000 kg / 52,920 lbs
+Inventory
+- Item: Lumber
+- Item code: HS 4407.10
+- Quantity: 50 units
+- Packaging: 50 bundles
+- Net mass: 20,000 kg / 44,100 lbs
+- Gross mass: 20,500 kg / 45,202 lbs

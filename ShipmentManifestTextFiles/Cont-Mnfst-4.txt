@@ -1,0 +1,18 @@
+Shipping container 4 - manifest
+Country of origin: Germany
+Port of loading: Hamburg, Germany
+Port of discharge: Rotterdam, Netherlands
+Destination: London, United Kingdom
+Container ID: HLCU9876543
+ISO size/type: 20GP (General Purpose)
+Container ownership: Hapag-Lloyd
+Condition at first receipt: New
+Tare mass: 2,300 kg / 5,072 lbs
+Max gross mass: 24,000 kg / 52,920 lbs
+Inventory
+- Item: Automotive Parts
+- Item code: HS 8409.91
+- Quantity: 200 units
+- Packaging: 10 pallets
+- Net mass: 4,000 kg / 8,820 lbs
+- Gross mass: 4,500 kg / 9,922 lbs

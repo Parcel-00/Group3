@@ -1,0 +1,18 @@
+Shipping container 20 - manifest
+Country of origin: South Korea
+Port of loading: Busan, South Korea
+Port of discharge: Vancouver, BC, Canada
+Destination: Toronto, ON, Canada
+Container ID: KKLN2233445
+ISO size/type: 20GP
+Container ownership: K-Line
+Condition at first receipt: Used
+Tare mass: 2,300 kg / 5,072 lbs
+Max gross mass: 24,000 kg / 52,920 lbs
+Inventory
+- Item: TVs
+- Item code: HS 8528.72
+- Quantity: 100 units
+- Packaging: 100 cartons
+- Net mass: 5,000 kg / 11,025 lbs
+- Gross mass: 5,500 kg / 12,128 lbs
