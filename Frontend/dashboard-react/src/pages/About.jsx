@@ -13,11 +13,7 @@ function About() {
           <div>
             <h3>About</h3>
             <p className="hint">
-              This is a prototype interface for a shipping container manifest scanner
-              and logger. In the full system, camera-based detection would identify
-              the container (LEGO/wooden-block proxy), barcode reading would capture
-              IDs, and damage/anomaly detection would record defects and compute an
-              anomaly percentage in 20% increments.
+              What is Parcel? Parcel is an AI-powered, real object detection, and simulated shipping container manifest scanner, logging software and web application. The software’s backend scans the 1D barcode and unique identifier of incoming shipping containers, records their content (pre-written, because this is simulated) as well as any anomalies (simulated via marked dots on the bricks), damages, and displays them to the frontend - an accessible app interface, specifically in a dedicated tab, where users can view the manifests of past shipments, while administrative users, in addition, can access the system’s backend, which is the software and various software components, to update, eliminate potential errors, and maintain them.
             </p>
           </div>
 
@@ -39,7 +35,7 @@ function About() {
         </div>
       </section>
 
-      <footer>Prototype UI only. No data is persisted by this front-end.</footer>
+      <footer>Parcel by Group3.</footer>
     </main>
   );
 }

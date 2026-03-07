@@ -9,15 +9,23 @@ import Scan from "./pages/Scan";
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/scan" element={<Scan />} />
-      <Route path="/results" element={<Results />} />
-      <Route path="/logger" element={<Logger />} />
-      <Route path="/about" element={<About />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <div className="bg-slideshow" aria-hidden="true">
+        <span className="bg-slide bg-slide--1"></span>
+        <span className="bg-slide bg-slide--2"></span>
+        <span className="bg-slide bg-slide--3"></span>
+      </div>
+
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/scan" element={<Scan />} />
+        <Route path="/results" element={<Results />} />
+        <Route path="/logger" element={<Logger />} />
+        <Route path="/about" element={<About />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 
