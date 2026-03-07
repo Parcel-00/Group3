@@ -3,8 +3,9 @@ import TopNav from "../components/TopNav";
 import { clearScans, getScans } from "../data/scanStore";
 
 function pillClass(severity) {
-  if (severity === "Severe") return "pill pill--severe";
-  if (severity === "Moderate") return "pill pill--moderate";
+  if (severity === "SUCCESS") return "pill pill--ok";
+  if (severity === "NO_MATCH_FOUND") return "pill pill--moderate";
+  if (severity === "ERROR") return "pill pill--severe";
   return "pill pill--ok";
 }
 
@@ -31,7 +32,7 @@ function Logger() {
         <div className="card-pad page-grid">
           <div>
             <h3>Logger</h3>
-            <p className="hint">Demo manifest scan history stored locally in this browser.</p>
+            <p className="hint">Shipment scan history stored locally in this browser.</p>
           </div>
 
           <div className="row">
@@ -52,8 +53,9 @@ function Logger() {
                   <tr>
                     <th>Time</th>
                     <th>Container</th>
-                    <th>Damage</th>
-                    <th>Severity</th>
+                    <th>Confidence</th>
+                    <th>Status</th>
+                    <th>Manifest</th>
                     <th>Image</th>
                   </tr>
                 </thead>
@@ -62,10 +64,11 @@ function Logger() {
                     <tr key={`${scan.timestamp}-${scan.containerId}-${index}`}>
                       <td>{formatTime(scan.timestamp)}</td>
                       <td>{scan.containerId}</td>
-                      <td>{scan.damagePct}%</td>
+                      <td>{scan.confidence ?? 0}%</td>
                       <td>
-                        <span className={pillClass(scan.severity)}>{scan.severity}</span>
+                        <span className={pillClass(scan.status)}>{scan.status}</span>
                       </td>
+                      <td>{scan.matchedManifest || "None"}</td>
                       <td>{scan.imageName}</td>
                     </tr>
                   ))}
@@ -76,7 +79,7 @@ function Logger() {
         </div>
       </section>
 
-      <footer>Prototype UI only. No data is persisted by this front-end.</footer>
+      <footer>Scan summaries are persisted in localStorage for the logger view.</footer>
     </main>
   );
 }

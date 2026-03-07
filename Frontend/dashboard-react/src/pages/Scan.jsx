@@ -3,40 +3,66 @@ import { useNavigate } from "react-router-dom";
 import TopNav from "../components/TopNav";
 import { addScan } from "../data/scanStore";
 
-const DAMAGE_OPTIONS = [0, 20, 40, 60, 80, 100];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000";
 
-function getSeverity(damagePct) {
-  if (damagePct >= 80) return "Severe";
-  if (damagePct >= 40) return "Moderate";
-  return "OK";
+function normalizeStatus(shipmentData) {
+  const status = shipmentData?.metadata?.processingStatus;
+  if (status) return status;
+  return shipmentData?.processingResult?.success ? "SUCCESS" : "NO_MATCH_FOUND";
 }
 
 function Scan() {
   const navigate = useNavigate();
-  const [containerId, setContainerId] = useState("LEGO-001");
+  const [containerId, setContainerId] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [scanError, setScanError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAnalyze = () => {
-    const normalizedId = containerId.trim().toUpperCase();
-    if (!normalizedId.startsWith("LEGO")) {
-      setScanError("Demo scanner only accepts LEGO container IDs (example: LEGO-001).");
+  const handleAnalyze = async () => {
+    if (!selectedFile) {
+      setScanError("Select an image or PDF file before analyzing.");
       return;
     }
 
     setScanError("");
-    const damagePct =
-      DAMAGE_OPTIONS[Math.floor(Math.random() * DAMAGE_OPTIONS.length)];
-    const scan = {
-      timestamp: new Date().toISOString(),
-      containerId: containerId.trim() || "LEGO-001",
-      damagePct,
-      severity: getSeverity(damagePct),
-      imageName: selectedFile?.name || "No image uploaded",
-    };
+    setIsSubmitting(true);
 
-    addScan(scan);
-    navigate("/results", { state: { scan } });
+    try {
+      const formData = new FormData();
+      formData.append("image", selectedFile);
+      if (containerId.trim()) {
+        formData.append("containerId", containerId.trim());
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/shipments/process`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.message || payload?.error || "Scan request failed.");
+      }
+
+      const shipmentData = payload?.shipmentData;
+      const parsedContainerId =
+        shipmentData?.shipmentDetails?.container?.containerId || null;
+      const scan = {
+        timestamp: shipmentData?.timestamp || new Date().toISOString(),
+        containerId: parsedContainerId || containerId.trim() || "Unknown",
+        confidence: shipmentData?.processingResult?.confidenceScore ?? 0,
+        status: normalizeStatus(shipmentData),
+        imageName: shipmentData?.imageProcessed || selectedFile.name,
+        matchedManifest: shipmentData?.processingResult?.matchedManifest || "None",
+      };
+
+      addScan(scan);
+      navigate("/results", { state: { scan, shipmentData } });
+    } catch (error) {
+      setScanError(error.message || "Unable to process this file.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -48,8 +74,8 @@ function Scan() {
           <div>
             <h3>Scan Container</h3>
             <p className="hint">
-              Demo analyzer: uploads are optional and damage percentage is generated
-              randomly in 20% increments.
+              Upload a shipment image/PDF to run OCR and match it to the closest
+              manifest.
             </p>
           </div>
 
@@ -57,12 +83,13 @@ function Scan() {
             <div className="stack">
               <div className="field">
                 <label className="label" htmlFor="container-id">
-                  Container ID
+                  Container ID (optional hint)
                 </label>
                 <input
                   id="container-id"
                   className="input"
                   type="text"
+                  placeholder="ABCU1234567"
                   value={containerId}
                   onChange={(event) => setContainerId(event.target.value)}
                 />
@@ -70,13 +97,13 @@ function Scan() {
 
               <div className="field">
                 <label className="label" htmlFor="scan-image">
-                  Optional image upload
+                  Image or PDF upload
                 </label>
                 <input
                   id="scan-image"
                   className="input"
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.pdf,application/pdf"
                   onChange={(event) =>
                     setSelectedFile(event.target.files?.[0] ?? null)
                   }
@@ -88,8 +115,9 @@ function Scan() {
                   type="button"
                   className="button primary"
                   onClick={handleAnalyze}
+                  disabled={isSubmitting}
                 >
-                  Analyze
+                  {isSubmitting ? "Analyzing..." : "Analyze"}
                 </button>
                 <button
                   type="button"
@@ -104,10 +132,11 @@ function Scan() {
             </div>
 
             <div className="logger-box" role="status" aria-live="polite">
-              <strong>Demo behavior</strong>
+              <strong>Live API behavior</strong>
               <br />
-              Clicking Analyze saves a generated scan result to localStorage, then
-              routes to the results page with the scan data in router state.
+              Clicking Analyze uploads the selected file to the backend, stores a
+              summary in localStorage, and routes to Results with full response
+              details.
               <br />
               <br />
               Current image: {selectedFile?.name || "None selected"}
@@ -116,7 +145,7 @@ function Scan() {
         </div>
       </section>
 
-      <footer>Prototype UI only. No data is persisted by this front-end.</footer>
+      <footer>Scan summaries are persisted in localStorage for the logger view.</footer>
     </main>
   );
 }
