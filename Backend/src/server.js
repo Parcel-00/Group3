@@ -3,6 +3,7 @@
  * Handles file uploads, image processing, and JSON generation
  */
 
+import "dotenv/config";
 import express from "express";
 import multer from "multer";
 import cors from "cors";
@@ -10,6 +11,8 @@ import path from "path";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { ShipmentProcessor } from "./shipmentProcessor.js";
+import { supabase } from "./supabaseClient.js";
+import { saveManifest, logScanEvent } from "./shipmentDb.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +23,27 @@ const PORT = process.env.PORT || 5001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+const requireAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+    if (!token) {
+      return res.status(401).json({ error: "Missing auth token" });
+    }
+
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) {
+      return res.status(401).json({ error: "Invalid auth token" });
+    }
+
+    req.user = data.user;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: "Auth verification failed" });
+  }
+};
 
 // File upload configuration
 const uploadDir = path.join(__dirname, "../uploads");
@@ -63,6 +87,18 @@ let processor = null;
 /**
  * Initialize the processor with manifest files
  */
+async function seedManifestsToDb() {
+  if (!processor?.manifestCache) return;
+  let saved = 0;
+  for (const [manifestId, data] of processor.manifestCache) {
+    const result = await saveManifest(data.parsedData, manifestId);
+    if (result) saved++;
+  }
+  if (saved > 0) {
+    console.log(`Seeded ${saved} manifests to database`);
+  }
+}
+
 async function initializeProcessor() {
   const manifestDir = path.join(__dirname, "../../ShipmentManifestTextFiles");
   const uniqueIdDir = path.join(__dirname, "../../ShipmentUniqueIdentifiers");
@@ -70,6 +106,7 @@ async function initializeProcessor() {
   processor = new ShipmentProcessor(manifestDir, uniqueIdDir);
   try {
     await processor.loadManifests();
+    await seedManifestsToDb();
     console.log("Shipment processor initialized");
   } catch (err) {
     console.error("Failed to initialize processor:", err);
@@ -89,6 +126,9 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// All API routes below this point require auth
+app.use("/api", requireAuth);
 
 /**
  * Get list of available manifests
@@ -111,6 +151,99 @@ app.get("/api/manifests", (req, res) => {
     count: manifests.length,
     manifests,
   });
+});
+
+/**
+ * Get containers from database
+ */
+app.get("/api/containers", async (req, res) => {
+  try {
+    const { data: containers, error } = await supabase
+      .from("containers")
+      .select(
+        "id, container_id, manifest_number, title, iso_size_type, ownership, condition, tare_mass_kg, max_gross_mass_kg, created_at, origin_address_id, port_loading_id, port_discharge_id, destination_id"
+      )
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    // Fetch address display text for each container
+    const addressIds = new Set();
+    (containers ?? []).forEach((c) => {
+      [c.origin_address_id, c.port_loading_id, c.port_discharge_id, c.destination_id].forEach(
+        (id) => id && addressIds.add(id)
+      );
+    });
+    const { data: addresses } = await supabase
+      .from("addresses")
+      .select("id, display_text, address_type")
+      .in("id", [...addressIds]);
+
+    const addrMap = (addresses ?? []).reduce((acc, a) => {
+      acc[a.id] = a;
+      return acc;
+    }, {});
+
+    const enriched = (containers ?? []).map((c) => ({
+      ...c,
+      origin: addrMap[c.origin_address_id]?.display_text ?? null,
+      port_loading: addrMap[c.port_loading_id]?.display_text ?? null,
+      port_discharge: addrMap[c.port_discharge_id]?.display_text ?? null,
+      destination: addrMap[c.destination_id]?.display_text ?? null,
+    }));
+
+    res.json({ count: enriched.length, containers: enriched });
+  } catch (err) {
+    console.error("Error fetching containers:", err);
+    res.status(500).json({ error: "Failed to fetch containers" });
+  }
+});
+
+/**
+ * Get single container with contents from database
+ */
+app.get("/api/containers/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { data: container, error } = await supabase
+      .from("containers")
+      .select("*, container_contents(*)")
+      .eq("id", id)
+      .single();
+
+    if (error || !container) {
+      return res.status(404).json({ error: "Container not found" });
+    }
+
+    const addrIds = [
+      container.origin_address_id,
+      container.port_loading_id,
+      container.port_discharge_id,
+      container.destination_id,
+    ].filter(Boolean);
+    const { data: addresses } = await supabase
+      .from("addresses")
+      .select("id, display_text, address_type")
+      .in("id", addrIds);
+
+    const addrMap = (addresses ?? []).reduce((acc, a) => {
+      acc[a.id] = a.display_text;
+      return acc;
+    }, {});
+
+    res.json({
+      ...container,
+      origin: addrMap[container.origin_address_id] ?? null,
+      port_loading: addrMap[container.port_loading_id] ?? null,
+      port_discharge: addrMap[container.port_discharge_id] ?? null,
+      destination: addrMap[container.destination_id] ?? null,
+    });
+  } catch (err) {
+    console.error("Error fetching container:", err);
+    res.status(500).json({ error: "Failed to fetch container" });
+  }
 });
 
 /**
@@ -147,6 +280,25 @@ app.post("/api/shipments/process", upload.single("image"), async (req, res) => {
 
     // Process the shipment
     const shipmentData = await processor.processShipment(req.file.path);
+
+    // Save to database and log scan
+    if (shipmentData.shipmentDetails?.container) {
+      const containerId =
+        shipmentData.shipmentDetails.container.containerID ||
+        shipmentData.shipmentDetails.container.containerId;
+      await saveManifest({
+        container: shipmentData.shipmentDetails.container,
+        items: shipmentData.shipmentDetails.items ?? [],
+        metadata: shipmentData.metadata ?? {},
+      });
+      if (containerId) {
+        await logScanEvent(containerId, {
+          imageFilename: req.file.filename,
+          confidenceScore: shipmentData.processingResult?.confidenceScore ?? null,
+          userId: req.user?.id ?? null,
+        });
+      }
+    }
 
     // Save JSON to file
     const jsonDir = path.join(__dirname, "../shipments");
