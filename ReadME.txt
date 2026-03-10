@@ -15,3 +15,10 @@ Otherwise you would need to open a terminal, navigate to "Frontend\dashboard-rea
 and run these commands inside that folder:
 "npm install" (installs npm for react/vite)
 "npm run dev"
+
+To open on your phone: 
+Start the application on your desired server (computer machine) 
+and merelly enter on your phones web browser:
+http://'Your ip address that is the host':5173 (the default port for vite)
+
+NOTE: you put in your computers ip address or network host.
