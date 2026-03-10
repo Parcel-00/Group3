@@ -17,7 +17,7 @@ function Login() {
     event.preventDefault();
 
     if (!email || !password) {
-      setMessage("Enter an email and password to continue.");
+      setMessage("Please enter an email and password to continue.");
       return;
     }
 
@@ -29,7 +29,7 @@ function Login() {
       <section className="card card-pad" aria-live="polite">
         <h3>Login</h3>
         <p className="hint">
-          Demo sign-in for the prototype flow. No backend call is made.
+          Please fill out the fields below
         </p>
 
         <form className="form" autoComplete="off" onSubmit={handleSubmit}>
@@ -84,8 +84,6 @@ function Login() {
           {message && <div className="msg ok">{message}</div>}
         </form>
       </section>
-
-      <footer>Prototype UI only. No data is persisted by this front-end.</footer>
     </main>
   );
 }

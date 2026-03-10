@@ -75,8 +75,6 @@ function Logger() {
           )}
         </div>
       </section>
-
-      <footer>Prototype UI only. No data is persisted by this front-end.</footer>
     </main>
   );
 }
