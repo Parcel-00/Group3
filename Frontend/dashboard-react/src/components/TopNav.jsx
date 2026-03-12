@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard" },
@@ -9,6 +10,11 @@ const navItems = [
 
 function TopNav() {
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/", { state: { message: "Signed out." } });
+  };
 
   return (
     <header className="top-nav">
@@ -28,7 +34,7 @@ function TopNav() {
       <button
         type="button"
         className="button ghost"
-        onClick={() => navigate("/", { state: { message: "Signed out." } })}
+        onClick={handleLogout}
       >
         Logout
       </button>

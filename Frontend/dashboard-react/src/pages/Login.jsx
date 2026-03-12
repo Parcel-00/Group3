@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 function Login() {
   const navigate = useNavigate();
@@ -8,12 +9,24 @@ function Login() {
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState("signin");
   const [message, setMessage] = useState(location.state?.message ?? null);
+  const [working, setWorking] = useState(false);
 
   useEffect(() => {
     setMessage(location.state?.message ?? null);
   }, [location.state]);
 
-  const handleSubmit = (event) => {
+  useEffect(() => {
+    let isMounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      if (data?.session) navigate("/dashboard");
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!email || !password) {
@@ -21,16 +34,40 @@ function Login() {
       return;
     }
 
-    navigate("/dashboard");
+    setWorking(true);
+    if (mode === "signup") {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        setMessage(error.message);
+      } else if (data?.session) {
+        navigate("/dashboard");
+      } else {
+        setMessage("Check your email to confirm your account.");
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setMessage(error.message);
+      } else {
+        navigate("/dashboard");
+      }
+    }
+    setWorking(false);
   };
 
   return (
     <main className="shell">
       <section className="card card-pad" aria-live="polite">
         <h3>Login</h3>
-        <p className="hint">
-          Demo sign-in for the prototype flow. No backend call is made.
-        </p>
+        <p className="hint">Sign in with your Supabase account.</p>
 
         <form className="form" autoComplete="off" onSubmit={handleSubmit}>
           <div className="field">
@@ -62,7 +99,11 @@ function Login() {
           </div>
 
           <div className="row">
-            <button type="submit" className="button primary btn-wide">
+            <button
+              type="submit"
+              className="button primary btn-wide"
+              disabled={working}
+            >
               {mode === "signin" ? "Sign in" : "Create account"}
             </button>
           </div>
@@ -74,6 +115,7 @@ function Login() {
               onClick={() =>
                 setMode((value) => (value === "signin" ? "signup" : "signin"))
               }
+              disabled={working}
             >
               {mode === "signin"
                 ? "Need an account? Create one"

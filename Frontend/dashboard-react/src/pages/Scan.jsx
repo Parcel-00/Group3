@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "../components/TopNav";
 import { addScan } from "../data/scanStore";
+import { supabase } from "../supabaseClient";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5001";
 
 function normalizeStatus(shipmentData) {
   const status = shipmentData?.metadata?.processingStatus;
@@ -28,6 +30,14 @@ function Scan() {
     setIsSubmitting(true);
 
     try {
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) {
+        setScanError("You must be signed in before running a scan.");
+        setIsSubmitting(false);
+        return;
+      }
+
       const formData = new FormData();
       formData.append("image", selectedFile);
       if (containerId.trim()) {
@@ -36,12 +46,17 @@ function Scan() {
 
       const response = await fetch(`${API_BASE_URL}/api/shipments/process`, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload?.message || payload?.error || "Scan request failed.");
+        throw new Error(
+          payload?.message || payload?.error || "Scan request failed.",
+        );
       }
 
       const shipmentData = payload?.shipmentData;
@@ -53,7 +68,8 @@ function Scan() {
         confidence: shipmentData?.processingResult?.confidenceScore ?? 0,
         status: normalizeStatus(shipmentData),
         imageName: shipmentData?.imageProcessed || selectedFile.name,
-        matchedManifest: shipmentData?.processingResult?.matchedManifest || "None",
+        matchedManifest:
+          shipmentData?.processingResult?.matchedManifest || "None",
       };
 
       addScan(scan);
@@ -134,9 +150,9 @@ function Scan() {
             <div className="logger-box" role="status" aria-live="polite">
               <strong>Live API behavior</strong>
               <br />
-              Clicking Analyze uploads the selected file to the backend, stores a
-              summary in localStorage, and routes to Results with full response
-              details.
+              Clicking Analyze uploads the selected file to the backend, stores
+              a summary in localStorage, and routes to Results with full
+              response details.
               <br />
               <br />
               Current image: {selectedFile?.name || "None selected"}
@@ -145,7 +161,9 @@ function Scan() {
         </div>
       </section>
 
-      <footer>Scan summaries are persisted in localStorage for the logger view.</footer>
+      <footer>
+        Scan summaries are persisted in localStorage for the logger view.
+      </footer>
     </main>
   );
 }
