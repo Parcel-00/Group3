@@ -83,9 +83,6 @@ function Logger() {
         </div>
       </section>
 
-      <footer>
-        Scan summaries are persisted in localStorage for the logger view.
-      </footer>
     </main>
   );
 }

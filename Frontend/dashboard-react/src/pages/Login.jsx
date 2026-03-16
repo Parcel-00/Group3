@@ -30,7 +30,7 @@ function Login() {
     event.preventDefault();
 
     if (!email || !password) {
-      setMessage("Enter an email and password to continue.");
+      setMessage("Please enter an email and password to continue.");
       return;
     }
 
@@ -126,8 +126,6 @@ function Login() {
           {message && <div className="msg ok">{message}</div>}
         </form>
       </section>
-
-      <footer>Prototype UI only. No data is persisted by this front-end.</footer>
     </main>
   );
 }
