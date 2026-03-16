@@ -15,6 +15,9 @@ __pycache__/
 # VS Code
 .vscode/
 
+# Node dependencies
+node_modules/
+
 # OS junk
 .DS_Store
 Thumbs.db

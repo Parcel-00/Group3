@@ -1,9 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import TopNav from "../components/TopNav";
 
-function severityClass(severity) {
-  if (severity === "Severe") return "pill pill--severe";
-  if (severity === "Moderate") return "pill pill--moderate";
+function statusClass(status) {
+  if (status === "SUCCESS") return "pill pill--ok";
+  if (status === "NO_MATCH_FOUND") return "pill pill--moderate";
   return "pill pill--ok";
 }
 
@@ -17,6 +17,9 @@ function Results() {
   const navigate = useNavigate();
   const location = useLocation();
   const scan = location.state?.scan;
+  const shipmentData = location.state?.shipmentData;
+  const totalItems =
+    shipmentData?.shipmentDetails?.summary?.totalItems ?? "N/A";
 
   return (
     <main className="shell shell-wide">
@@ -26,7 +29,9 @@ function Results() {
         <div className="card-pad page-grid">
           <div>
             <h3>Results</h3>
-            <p className="hint">Latest simulated scan output from the demo analyzer.</p>
+            <p className="hint">
+              Latest scan output from the shipment processing API.
+            </p>
           </div>
 
           {!scan ? (
@@ -50,18 +55,28 @@ function Results() {
                   <div className="stat-value">{scan.containerId}</div>
                 </div>
                 <div className="stat">
-                  <div className="stat-label">Damage %</div>
-                  <div className="stat-value">{scan.damagePct}%</div>
+                  <div className="stat-label">Confidence</div>
+                  <div className="stat-value">{scan.confidence}%</div>
                 </div>
                 <div className="stat">
-                  <div className="stat-label">Severity</div>
+                  <div className="stat-label">Status</div>
                   <div className="stat-value">
-                    <span className={severityClass(scan.severity)}>{scan.severity}</span>
+                    <span className={statusClass(scan.status)}>
+                      {scan.status}
+                    </span>
                   </div>
                 </div>
                 <div className="stat">
                   <div className="stat-label">Image file</div>
                   <div className="stat-value">{scan.imageName}</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-label">Matched manifest</div>
+                  <div className="stat-value">{scan.matchedManifest}</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-label">Item count</div>
+                  <div className="stat-value">{totalItems}</div>
                 </div>
               </div>
 
@@ -90,7 +105,9 @@ function Results() {
         </div>
       </section>
 
-      <footer>Prototype UI only. No data is persisted by this front-end.</footer>
+      <footer>
+        Scan summaries are persisted in localStorage for the logger view.
+      </footer>
     </main>
   );
 }
