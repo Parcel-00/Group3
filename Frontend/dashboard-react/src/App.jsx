@@ -49,6 +49,9 @@ function App() {
         <span className="bg-slide bg-slide--1"></span>
         <span className="bg-slide bg-slide--2"></span>
         <span className="bg-slide bg-slide--3"></span>
+        <span className="bg-slide bg-slide--4"></span>
+        <span className="bg-slide bg-slide--5"></span>
+        <span className="bg-slide bg-slide--6"></span>
       </div>
 
       <Routes>

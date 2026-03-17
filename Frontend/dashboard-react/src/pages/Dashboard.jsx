@@ -9,14 +9,17 @@ function Dashboard() {
       <section className="card">
         <TopNav />
 
-        <div className="hero">
-          <div className="badge" aria-label="Prototype status">
+        <div className="hero"> 
+
+          {/* <div className="badge" aria-label="Prototype status">
             <span className="dot" aria-hidden="true"></span>
-            Prototype front-end (local demo)
+            Online
           </div>
+          
+          I don't think this block is necessary*/}
 
           <h1>Parcelᵀᴹ</h1>
-          <p className="subtitle">We cut out the middle men.</p>
+          <p className="subtitle">❝ We cut out the middle men.</p>
         </div>
 
         <div className="actions" role="navigation" aria-label="Primary actions">

@@ -33,7 +33,7 @@ function Logger() {
           <div>
             <h3>Logger</h3>
             <p className="hint">
-              Shipment scan history stored locally in this browser.
+              The shipment scan history is stored locally in this browser.
             </p>
           </div>
 
