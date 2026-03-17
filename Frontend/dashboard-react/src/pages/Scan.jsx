@@ -37,14 +37,11 @@ function Scan() {
       false
     );
 
-    scanner.render(
-      (decodedText) => {
-        setContainerId(decodedText);
-        setShowScanner(false);
-        scanner.clear();
-      },
-      (error) => {}
-    );
+    scanner.render((decodedText) => {
+      setContainerId(decodedText);
+      setShowScanner(false);
+      scanner.clear();
+    });
 
     return () => {
       scanner.clear().catch(() => {});
