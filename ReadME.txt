@@ -29,3 +29,10 @@ http://'Your ip address that is the host':5173 (the default port for vite)
 
 NOTE: you put in your computers ip address or network host.
 
+IMPORTANT:
+Some public networks (such as Eastern Michigans) does not allow such easy access
+from the computer to the phone.
+I then used cloudflare where once the site is running to open in the phone you 
+must run 'cloudflared tunnel --url http://localhost:5173' and then use the random url from your
+phone. In this case HTTPS=False in vite.config
+

@@ -9,5 +9,6 @@ export default defineConfig({
   server: {
     host: true,
     https: true, // Enable HTTPS for camera access
-  }
+    allowedHosts: [".trycloudflare.com"], //HTTPS MUST BE FALSE IF YOU ARE TO TUNNEL
+  },
 })
