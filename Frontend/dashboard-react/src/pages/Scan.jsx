@@ -6,7 +6,9 @@ import { addScan } from "../data/scanStore";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { useEffect } from "react";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000";
+
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5001";
 
 function normalizeStatus(shipmentData) {
   const status = shipmentData?.metadata?.processingStatus;
@@ -22,6 +24,30 @@ function Scan() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showScanner, setShowScanner] = useState(false);
+//use effect used first outside of scan to better process qr codes/
+  useEffect(() => {
+        if (!showScanner) return;
+
+        const scanner = new Html5QrcodeScanner(
+          "qr-reader",
+          { fps: 10, qrbox: 250 },
+          false
+        );
+
+        scanner.render(
+          (decodedText) => {
+            setContainerId(decodedText);
+            setShowScanner(false);
+            scanner.clear();
+          },
+          (error) => {}
+        );
+
+        return () => {
+          scanner.clear().catch(() => {});
+        };
+      }, [showScanner]);
+      //end of qr code logic
 
   const handleAnalyze = async () => {
     if (!selectedFile) {
@@ -70,28 +96,7 @@ function Scan() {
     }
 
     {/*QR code scanner logic - currently unused but can be enabled for testing with QR codes*/}
-    useEffect(() => {
-      if (!showScanner) return;
-
-      const scanner = new Html5QrcodeScanner(
-        "qr-reader",
-        { fps: 10, qrbox: 250 },
-        false
-      );
-
-      scanner.render(
-        (decodedText) => {
-          setContainerId(decodedText);
-          setShowScanner(false);
-          scanner.clear();
-        },
-        (error) => {}
-      );
-
-      return () => {
-        scanner.clear().catch(() => {});
-      };
-    }, [showScanner]);
+    
   };
 
   return (
@@ -160,7 +165,7 @@ function Scan() {
               {scanError && <div className="msg bad">{scanError}</div>}
             </div>
             
-            {/*added button to scan qr code*/}
+            {/*added button to scan qr code. THIS UNTIL NEXT COMMENT*/}
             <div className="row">
               <button
                 type="button"
