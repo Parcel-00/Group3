@@ -460,7 +460,7 @@ input:focus {
   gap: 16px;
 }
 
-.shipment-status-shell {
+/* .shipment-status-shell {
   background: rgba(246, 250, 255, 0.9);
 }
 
@@ -478,7 +478,7 @@ input:focus {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-}
+} */
 
 .stack {
   display: grid;
