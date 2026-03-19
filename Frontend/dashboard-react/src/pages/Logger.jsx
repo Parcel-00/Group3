@@ -2,10 +2,10 @@ import { useState } from "react";
 import TopNav from "../components/TopNav";
 import { clearScans, getScans } from "../data/scanStore";
 
-function pillClass(severity) {
-  if (severity === "SUCCESS") return "pill pill--ok";
-  if (severity === "NO_MATCH_FOUND") return "pill pill--moderate";
-  if (severity === "ERROR") return "pill pill--severe";
+function pillClass(status) {
+  if (status === "SUCCESS") return "pill pill--ok";
+  if (status === "NO_MATCH_FOUND") return "pill pill--moderate";
+  if (status === "ERROR") return "pill pill--severe";
   return "pill pill--ok";
 }
 
@@ -32,7 +32,9 @@ function Logger() {
         <div className="card-pad page-grid">
           <div>
             <h3>Logger</h3>
-            <p className="hint">Shipment scan history stored locally in this browser.</p>
+            <p className="hint">
+              The shipment scan history is stored locally in this browser.
+            </p>
           </div>
 
           <div className="row">
@@ -66,7 +68,9 @@ function Logger() {
                       <td>{scan.containerId}</td>
                       <td>{scan.confidence ?? 0}%</td>
                       <td>
-                        <span className={pillClass(scan.status)}>{scan.status}</span>
+                        <span className={pillClass(scan.status)}>
+                          {scan.status}
+                        </span>
                       </td>
                       <td>{scan.matchedManifest || "None"}</td>
                       <td>{scan.imageName}</td>
@@ -79,7 +83,6 @@ function Logger() {
         </div>
       </section>
 
-      <footer>Scan summaries are persisted in localStorage for the logger view.</footer>
     </main>
   );
 }

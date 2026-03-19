@@ -18,7 +18,7 @@ function About() {
           </div>
 
           <div className="msg">
-            Integration points (future): <strong>camera input</strong>,
+            Integration points: <strong>camera input</strong>,
             <strong> barcode decoding</strong>, <strong>manifest store</strong>, and
             <strong> analytics</strong>.
           </div>

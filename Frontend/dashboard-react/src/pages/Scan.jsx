@@ -2,13 +2,16 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "../components/TopNav";
 import { addScan } from "../data/scanStore";
-{/*used to scan a qr code from phone'''*/}
+{
+  /*used to scan a qr code from phone'''*/
+}
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { useEffect } from "react";
 
+import { supabase } from "../supabaseClient";
 
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5001";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5001";
 
 function normalizeStatus(shipmentData) {
   const status = shipmentData?.metadata?.processingStatus;
@@ -24,30 +27,27 @@ function Scan() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showScanner, setShowScanner] = useState(false);
-//use effect used first outside of scan to better process qr codes/
+  //use effect used first outside of scan to better process qr codes/
   useEffect(() => {
-        if (!showScanner) return;
+    if (!showScanner) return;
 
-        const scanner = new Html5QrcodeScanner(
-          "qr-reader",
-          { fps: 10, qrbox: 250 },
-          false
-        );
+    const scanner = new Html5QrcodeScanner(
+      "qr-reader",
+      { fps: 10, qrbox: 250 },
+      false
+    );
 
-        scanner.render(
-          (decodedText) => {
-            setContainerId(decodedText);
-            setShowScanner(false);
-            scanner.clear();
-          },
-          (error) => {}
-        );
+    scanner.render((decodedText) => {
+      setContainerId(decodedText);
+      setShowScanner(false);
+      scanner.clear();
+    });
 
-        return () => {
-          scanner.clear().catch(() => {});
-        };
-      }, [showScanner]);
-      //end of qr code logic
+    return () => {
+      scanner.clear().catch(() => {});
+    };
+  }, [showScanner]);
+  //end of qr code logic
 
   const handleAnalyze = async () => {
     if (!selectedFile) {
@@ -59,6 +59,14 @@ function Scan() {
     setIsSubmitting(true);
 
     try {
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) {
+        setScanError("You must be signed in before running a scan.");
+        setIsSubmitting(false);
+        return;
+      }
+
       const formData = new FormData();
       formData.append("image", selectedFile);
       if (containerId.trim()) {
@@ -67,12 +75,17 @@ function Scan() {
 
       const response = await fetch(`${API_BASE_URL}/api/shipments/process`, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload?.message || payload?.error || "Scan request failed.");
+        throw new Error(
+          payload?.message || payload?.error || "Scan request failed."
+        );
       }
 
       const shipmentData = payload?.shipmentData;
@@ -84,7 +97,8 @@ function Scan() {
         confidence: shipmentData?.processingResult?.confidenceScore ?? 0,
         status: normalizeStatus(shipmentData),
         imageName: shipmentData?.imageProcessed || selectedFile.name,
-        matchedManifest: shipmentData?.processingResult?.matchedManifest || "None",
+        matchedManifest:
+          shipmentData?.processingResult?.matchedManifest || "None",
       };
 
       addScan(scan);
@@ -95,8 +109,9 @@ function Scan() {
       setIsSubmitting(false);
     }
 
-    {/*QR code scanner logic - currently unused but can be enabled for testing with QR codes*/}
-    
+    {
+      /*QR code scanner logic - currently unused but can be enabled for testing with QR codes*/
+    }
   };
 
   return (
@@ -164,7 +179,7 @@ function Scan() {
 
               {scanError && <div className="msg bad">{scanError}</div>}
             </div>
-            
+
             {/*added button to scan qr code. THIS UNTIL NEXT COMMENT*/}
             <div className="row">
               <button
@@ -194,22 +209,21 @@ function Scan() {
                 setSelectedFile(event.target.files?.[0] ?? null)
               }
             />
-            
+
             {showScanner && (
               <div className="card" style={{ marginTop: "20px" }}>
                 <h4>Scan QR Code</h4>
                 <div id="qr-reader" style={{ width: "300px" }}></div>
               </div>
             )}
-          {/*ALL OF THE ABOVE IS FOR THE QR CODE*/}
-
+            {/*ALL OF THE ABOVE IS FOR THE QR CODE*/}
 
             <div className="logger-box" role="status" aria-live="polite">
               <strong>Live API behavior</strong>
               <br />
-              Clicking Analyze uploads the selected file to the backend, stores a
-              summary in localStorage, and routes to Results with full response
-              details.
+              Clicking Analyze uploads the selected file to the backend, stores
+              a summary in localStorage, and routes to Results with full
+              response details.
               <br />
               <br />
               Current image: {selectedFile?.name || "None selected"}
@@ -218,7 +232,9 @@ function Scan() {
         </div>
       </section>
 
-      <footer>Scan summaries are persisted in localStorage for the logger view.</footer>
+      <footer>
+        Scan summaries are persisted in localStorage for the logger view.
+      </footer>
     </main>
   );
 }

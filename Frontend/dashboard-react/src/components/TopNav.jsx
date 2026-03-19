@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard" },
@@ -9,6 +10,17 @@ const navItems = [
 
 function TopNav() {
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      // Only navigate after we are sure the session is gone
+      navigate("/", { replace: true, state: { message: "Signed out successfully." } });
+    } catch (error) {
+      console.error("Logout failed:", error.message);
+      alert("Error logging out. Please try again.");
+    }
+  };
 
   return (
     <header className="top-nav">
@@ -28,7 +40,7 @@ function TopNav() {
       <button
         type="button"
         className="button ghost"
-        onClick={() => navigate("/", { state: { message: "Signed out." } })}
+        onClick={handleLogout}
       >
         Logout
       </button>

@@ -18,7 +18,8 @@ function Results() {
   const location = useLocation();
   const scan = location.state?.scan;
   const shipmentData = location.state?.shipmentData;
-  const totalItems = shipmentData?.shipmentDetails?.summary?.totalItems ?? "N/A";
+  const totalItems =
+    shipmentData?.shipmentDetails?.summary?.totalItems ?? "N/A";
 
   return (
     <main className="shell shell-wide">
@@ -28,7 +29,9 @@ function Results() {
         <div className="card-pad page-grid">
           <div>
             <h3>Results</h3>
-            <p className="hint">Latest scan output from the shipment processing API.</p>
+            <p className="hint">
+              Latest scan output from the shipment processing API.
+            </p>
           </div>
 
           {!scan ? (
@@ -58,7 +61,9 @@ function Results() {
                 <div className="stat">
                   <div className="stat-label">Status</div>
                   <div className="stat-value">
-                    <span className={statusClass(scan.status)}>{scan.status}</span>
+                    <span className={statusClass(scan.status)}>
+                      {scan.status}
+                    </span>
                   </div>
                 </div>
                 <div className="stat">
@@ -100,7 +105,9 @@ function Results() {
         </div>
       </section>
 
-      <footer>Scan summaries are persisted in localStorage for the logger view.</footer>
+      <footer>
+        Scan summaries are persisted in localStorage for the logger view.
+      </footer>
     </main>
   );
 }

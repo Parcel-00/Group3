@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@supabase/supabase-js": "^2.96.0",
-    "html5-qrcode": "^2.3.8"
-  }
-}
