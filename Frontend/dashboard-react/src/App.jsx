@@ -7,6 +7,7 @@ import Logger from "./pages/Logger";
 import Login from "./pages/Login";
 import Results from "./pages/Results";
 import Scan from "./pages/Scan";
+import ShipmentStatus from "./pages/ShipmentStatus"; // I included this line, just so that we have it, once the ShipmentStatus page is converted to a jsx file and the backend is integrated
 import { supabase } from "./supabaseClient";
 
 function App() {

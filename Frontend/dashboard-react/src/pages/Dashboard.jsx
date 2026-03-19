@@ -44,6 +44,15 @@ function Dashboard() {
           >
             About
           </button>
+
+          <button // Dashboard button for the shipment status page, so users can navigate to the page
+            type="button"
+            className="button"
+            onClick={() => navigate("/shipment-status")}
+          >
+            Shipment Status
+          </button>
+
         </div>
 
         <div className="panel">
