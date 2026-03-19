@@ -38,7 +38,7 @@ function App() {
   }, []);
 
   const ProtectedRoute = ({ children }) => {
-    if (authLoading) return null;
+    if (authLoading) return <div className="loading">Checking authentication...</div>;
     if (!session) return <Navigate to="/" replace />;
     return children;
   };

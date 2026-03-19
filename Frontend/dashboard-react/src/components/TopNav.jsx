@@ -12,8 +12,14 @@ function TopNav() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/", { state: { message: "Signed out." } });
+    try {
+      await supabase.auth.signOut();
+      // Only navigate after we are sure the session is gone
+      navigate("/", { replace: true, state: { message: "Signed out successfully." } });
+    } catch (error) {
+      console.error("Logout failed:", error.message);
+      alert("Error logging out. Please try again.");
+    }
   };
 
   return (
