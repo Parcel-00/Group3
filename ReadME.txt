@@ -35,6 +35,7 @@ from the computer to the phone.
 I then used cloudflare where once the site is running to open in the phone you 
 must run 'cloudflared tunnel --url http://localhost:5173' and then use the random url from your
 phone. In this case HTTPS=False in vite.config
+HTTPS MUST BE CHANGED TO FALSE (REVERT TO HTTP)
 
 This may require cloudflareto be installed. Which case:
 MAC: run 'brew install cloudflared'
