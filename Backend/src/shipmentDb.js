@@ -200,7 +200,7 @@ export async function saveManifest(parsedData, manifestId = null) {
  */
 export async function logScanEvent(
   containerId,
-  { imageFilename, confidenceScore, userId } = {}
+  { imageFilename, confidenceScore, userId } = {},
 ) {
   try {
     const { data: container } = await supabase
@@ -221,5 +221,117 @@ export async function logScanEvent(
     }
   } catch (err) {
     console.error("Error in logScanEvent:", err);
+  }
+}
+
+/**
+ * Record that a container was physically received (yard / warehouse).
+ * Inserts RECEIVED into container_events and updates containers.status when columns exist.
+ *
+ * @param {string} containerId - Business container id (containers.container_id), e.g. ISO number
+ * @param {{ facilityId?: string, notes?: string, userId?: string }} [options]
+ * @returns {Promise<{ ok: true, dbId: string, event: object } | { ok: false, error: string }>}
+ */
+export async function receiveContainer(containerId, options = {}) {
+  const { facilityId, notes, userId } = options;
+
+  try {
+    if (!containerId || typeof containerId !== "string") {
+      return { ok: false, error: "containerId is required" };
+    }
+
+    const trimmed = containerId.trim();
+    const { data: container, error: fetchError } = await supabase
+      .from("containers")
+      .select("id")
+      .eq("container_id", trimmed)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("receiveContainer lookup:", fetchError);
+      return { ok: false, error: fetchError.message };
+    }
+    if (!container?.id) {
+      return { ok: false, error: "Container not found" };
+    }
+
+    const eventRow = {
+      container_id: container.id,
+      event_type: "RECEIVED",
+      facility_id: facilityId ?? null,
+      notes: notes != null && notes !== "" ? String(notes) : null,
+      user_id: userId ?? null,
+    };
+
+    const { data: event, error: insertError } = await supabase
+      .from("container_events")
+      .insert(eventRow)
+      .select("id, event_type, created_at, facility_id, notes")
+      .single();
+
+    if (insertError) {
+      console.error("receiveContainer insert:", insertError);
+      return { ok: false, error: insertError.message };
+    }
+
+    const updatePayload = {
+      updated_at: new Date().toISOString(),
+      status: "RECEIVED",
+      current_facility_id: facilityId ?? null,
+    };
+
+    const { error: updateError } = await supabase
+      .from("containers")
+      .update(updatePayload)
+      .eq("id", container.id);
+
+    if (updateError) {
+      console.warn(
+        "receiveContainer: event saved but container update failed (check migrations):",
+        updateError.message,
+      );
+    }
+
+    return { ok: true, dbId: container.id, event };
+  } catch (err) {
+    console.error("receiveContainer:", err);
+    return { ok: false, error: err?.message ?? "Unknown error" };
+  }
+}
+
+export async function reportDamage(
+  containerId,
+  { damageType, notes, userId } = {},
+) {
+  try {
+    const { data: container } = await supabase
+      .from("containers")
+      .select("id")
+      .eq("container_id", containerId)
+      .single();
+    if (!container?.id) {
+      return { ok: false, error: "Container not found" };
+    }
+
+    const eventRow = {
+      container_id: container.id,
+      event_type: "DAMAGE_REPORTED",
+      damage_type: damageType ?? null,
+      notes: notes != null && notes !== "" ? String(notes) : null,
+      user_id: userId ?? null,
+    };
+    const { data: event, error: insertError } = await supabase
+      .from("container_events")
+      .insert(eventRow)
+      .select("id, event_type, created_at, damage_type, notes")
+      .single();
+    if (insertError) {
+      console.error("reportDamage insert:", insertError);
+      return { ok: false, error: insertError.message };
+    }
+    return { ok: true, dbId: container.id, event };
+  } catch (err) {
+    console.error("reportDamage:", err);
+    return { ok: false, error: err?.message ?? "Unknown error" };
   }
 }

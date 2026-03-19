@@ -12,7 +12,7 @@ import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { ShipmentProcessor } from "./shipmentProcessor.js";
 import { supabase } from "./supabaseClient.js";
-import { saveManifest, logScanEvent } from "./shipmentDb.js";
+import { saveManifest, logScanEvent, receiveContainer } from "./shipmentDb.js";
 
 
 
@@ -245,6 +245,36 @@ app.get("/api/containers/:id", async (req, res) => {
   } catch (err) {
     console.error("Error fetching container:", err);
     res.status(500).json({ error: "Failed to fetch container" });
+  }
+});
+
+/**
+ * Mark a container as received (writes RECEIVED to container_events)
+ * Body: { containerId: string (business id / ISO number), facilityId?, notes? }
+ */
+app.post("/api/containers/receive", async (req, res) => {
+  try {
+    const { containerId, facilityId, notes } = req.body ?? {};
+    const result = await receiveContainer(containerId, {
+      facilityId: facilityId ?? null,
+      notes: notes ?? null,
+      userId: req.user?.id ?? null,
+    });
+
+    if (!result.ok) {
+      const status =
+        result.error === "Container not found" ? 404 : 400;
+      return res.status(status).json({ error: result.error });
+    }
+
+    res.status(201).json({
+      success: true,
+      containerDbId: result.dbId,
+      event: result.event,
+    });
+  } catch (err) {
+    console.error("Error receiving container:", err);
+    res.status(500).json({ error: "Failed to record receive" });
   }
 });
 
