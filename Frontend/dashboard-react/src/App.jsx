@@ -7,6 +7,7 @@ import Logger from "./pages/Logger";
 import Login from "./pages/Login";
 import Results from "./pages/Results";
 import Scan from "./pages/Scan";
+import ShipmentStatus from "./pages/ShipmentStatus";
 import { supabase } from "./supabaseClient";
 
 function App() {
@@ -98,6 +99,14 @@ function App() {
           element={
             <ProtectedRoute>
               <About />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shipment-status"
+          element={
+            <ProtectedRoute authLoading={authLoading} session={session}>
+              <ShipmentStatus />
             </ProtectedRoute>
           }
         />

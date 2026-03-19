@@ -6,6 +6,7 @@ const navItems = [
   { to: "/scan", label: "Scan" },
   { to: "/logger", label: "Logger" },
   { to: "/about", label: "About" },
+  { to: "/shipment-status", label: "Shipment Status" },
 ];
 
 function TopNav() {

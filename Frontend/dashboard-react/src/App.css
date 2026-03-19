@@ -460,6 +460,218 @@ input:focus {
   gap: 16px;
 }
 
+.shipment-status-shell {
+  background:
+    linear-gradient(180deg, rgba(244, 248, 255, 0.96), rgba(235, 242, 252, 0.92));
+}
+
+.shipment-status-page-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.shipment-status-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.shipment-status-panel {
+  border: 1px solid rgba(83, 124, 184, 0.24);
+  border-radius: 18px;
+  background: rgba(252, 254, 255, 0.9);
+  box-shadow: 0 12px 28px rgba(24, 45, 82, 0.08);
+  padding: 22px;
+}
+
+.shipment-status-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  align-items: center;
+  background:
+    linear-gradient(180deg, rgba(250, 253, 255, 0.96), rgba(236, 244, 255, 0.92));
+}
+
+.shipment-status-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(47, 109, 246, 0.24);
+  background: rgba(47, 109, 246, 0.08);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shipment-status-subtitle {
+  max-width: 62ch;
+  margin-inline: 0;
+}
+
+.shipment-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.shipment-section-head--stacked {
+  margin-bottom: 12px;
+}
+
+.shipment-status-copy {
+  margin: 0;
+}
+
+.shipment-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.shipment-metric {
+  border: 1px solid rgba(83, 124, 184, 0.24);
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(240, 247, 255, 0.88);
+}
+
+.shipment-metric-label {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.shipment-metric-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.shipment-container-list,
+.shipment-log-list,
+.shipment-legend,
+.shipment-log-section {
+  display: grid;
+  gap: 14px;
+}
+
+.shipment-container-card {
+  border: 1px solid rgba(83, 124, 184, 0.24);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(242, 248, 255, 0.94));
+  padding: 18px;
+}
+
+.shipment-container-top,
+.shipment-container-meta,
+.shipment-log-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.shipment-container-id {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.shipment-container-route,
+.shipment-container-meta,
+.shipment-status-copy,
+.shipment-log-item {
+  color: var(--muted);
+}
+
+.shipment-container-route {
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.shipment-container-meta {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.shipment-severity-bar {
+  position: relative;
+  height: 10px;
+  margin: 16px 0 12px;
+  border-radius: 999px;
+  background: rgba(132, 164, 210, 0.2);
+  overflow: hidden;
+}
+
+.shipment-severity-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #26a17b, #f0b23a, #d64562);
+}
+
+.shipment-action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.shipment-action-danger {
+  color: #8e233c;
+  background: linear-gradient(180deg, #fff7fa, #ffe8ef);
+  border-color: rgba(214, 69, 98, 0.34);
+}
+
+.shipment-action-danger:hover {
+  background: linear-gradient(180deg, #fff5f8, #ffdce6);
+}
+
+.shipment-status-note {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(83, 124, 184, 0.24);
+  background: rgba(241, 247, 255, 0.9);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.shipment-status-note strong {
+  color: var(--text);
+}
+
+.shipment-status-note--danger {
+  border-color: rgba(214, 69, 98, 0.26);
+  background: rgba(255, 238, 243, 0.92);
+}
+
+.shipment-legend-row,
+.shipment-log-item {
+  border: 1px solid rgba(83, 124, 184, 0.24);
+  border-radius: 14px;
+  background: rgba(244, 249, 255, 0.9);
+  padding: 12px 14px;
+}
+
+.shipment-legend-row {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.shipment-status-sidebar {
+  position: sticky;
+  top: 18px;
+}
+
 .stack {
   display: grid;
   gap: 10px;
