@@ -1,4 +1,9 @@
 #%% 
+# Suppress TensorFlow warnings and ANSI codes
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress all TensorFlow messages
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN optimizations
+
 # CONFIG
 import os
 
@@ -62,12 +67,13 @@ def preprocess_image_for_model(image_path):
 
 def predict_damage(image_path, model=None, model_path=None):
     import tensorflow as tf
-
+    tf.get_logger().setLevel('ERROR')  # Suppress TensorFlow logs
+    
     if model is None:
         model = load_saved_model(model_path)
 
     x = preprocess_image_for_model(image_path)
-    prob = float(model.predict(x)[0][0])
+    prob = float(model.predict(x, verbose=0)[0][0])  # No progress bar
 
     result = {
         "damage_probability": 1.0 - prob,
@@ -276,16 +282,10 @@ def train_and_save_model():
 
 
 if __name__ == "__main__":
-    # Training path (same behavior as before but now safe to import)
-    convert_image_files()
-    train_and_save_model()
-    print("Done training and saving model.\nTo run inference server: python model_build.py --serve")
-
-    # optional command-line server mode
     import sys
-    if "--serve" in sys.argv:
-        start_model_api()
-    elif len(sys.argv) > 1 and sys.argv[1] == "--predict":
+    
+    # Check for prediction mode FIRST (before any training code)
+    if len(sys.argv) > 1 and sys.argv[1] == "--predict":
         if len(sys.argv) < 3:
             print("Usage: python model_build.py --predict <image_path>")
             sys.exit(1)
@@ -293,6 +293,16 @@ if __name__ == "__main__":
         result = predict_damage(image_path)
         import json
         print(json.dumps(result))
+        sys.exit(0)
+    
+    # Training path (same behavior as before but now safe to import)
+    convert_image_files()
+    train_and_save_model()
+    print("Done training and saving model.\nTo run inference server: python model_build.py --serve")
+
+    # optional command-line server mode
+    if "--serve" in sys.argv:
+        start_model_api()
 
 
 #Run as a service and can be imported as import model_build without running training code.

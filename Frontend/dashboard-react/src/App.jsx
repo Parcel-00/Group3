@@ -7,6 +7,7 @@ import Logger from "./pages/Logger";
 import Login from "./pages/Login";
 import Results from "./pages/Results";
 import Scan from "./pages/Scan";
+import { supabase } from "./supabaseClient";
 // import ShipmentStatus from "./pages/ShipmentStatus";
 function App() {
   const [session, setSession] = useState(null);

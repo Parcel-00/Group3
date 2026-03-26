@@ -103,7 +103,15 @@ export class ShipmentProcessor {
       });
 
       return new Promise((resolve, reject) => {
+        // Set a timeout for the prediction (30 seconds should be enough)
+        const timeout = setTimeout(() => {
+          pythonProcess.kill();
+          reject(new Error('Damage detection timed out after 30 seconds'));
+        }, 30000);
+
         pythonProcess.on('close', (code) => {
+          clearTimeout(timeout);
+          
           if (code !== 0) {
             console.error('Python process error:', stderr);
             reject(new Error(`Damage detection failed: ${stderr}`));
@@ -111,7 +119,19 @@ export class ShipmentProcessor {
           }
 
           try {
-            const result = JSON.parse(stdout.trim());
+            // Strip ANSI escape codes from stdout
+            const cleanStdout = stdout.replace(/\x1B\[[0-9;]*[mG]/g, '');
+            
+            // Find the JSON line in stdout (it might have logs before it)
+            const lines = cleanStdout.split('\n');
+            const jsonLine = lines.find(line => line.trim().startsWith('{'));
+            
+            if (!jsonLine) {
+              reject(new Error('No JSON output found from Python script'));
+              return;
+            }
+
+            const result = JSON.parse(jsonLine.trim());
             console.log('Damage detection completed:', result);
 
             resolve({
@@ -122,11 +142,13 @@ export class ShipmentProcessor {
             });
           } catch (parseErr) {
             console.error('Error parsing Python output:', parseErr);
+            console.error('Raw stdout:', stdout);
             reject(new Error(`Failed to parse model output: ${parseErr.message}`));
           }
         });
 
         pythonProcess.on('error', (err) => {
+          clearTimeout(timeout);
           console.error('Error spawning Python process:', err);
           reject(new Error(`Failed to start damage detection: ${err.message}`));
         });
