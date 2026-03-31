@@ -7,7 +7,9 @@ import Logger from "./pages/Logger";
 import Login from "./pages/Login";
 import Results from "./pages/Results";
 import Scan from "./pages/Scan";
-// import ShipmentStatus from "./pages/ShipmentStatus";
+import Facilities from "./pages/Facilities"; // 1. Import your new page
+import supabase from "./supabaseClient"; // 2. CRITICAL: Added this import to fix white screen
+
 function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -15,6 +17,7 @@ function App() {
   useEffect(() => {
     let isMounted = true;
 
+    // This was crashing because 'supabase' wasn't imported!
     supabase.auth
       .getSession()
       .then(({ data }) => {
@@ -32,7 +35,7 @@ function App() {
 
     return () => {
       isMounted = false;
-      data.subscription.unsubscribe();
+      if (data?.subscription) data.subscription.unsubscribe();
     };
   }, []);
 
@@ -65,6 +68,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        {/* 3. Added the Facilities tab route here */}
+        <Route
+          path="/facilities"
+          element={
+            <ProtectedRoute>
+              <Facilities />
             </ProtectedRoute>
           }
         />

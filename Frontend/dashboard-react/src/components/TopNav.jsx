@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard" },
+  { to: "/facilities", label: "Facilities" }, 
   { to: "/scan", label: "Scan" },
   { to: "/logger", label: "Logger" },
   { to: "/about", label: "About" },
@@ -15,7 +16,6 @@ function TopNav() {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      // Only navigate after we are sure the session is gone
       navigate("/", { replace: true, state: { message: "Signed out successfully." } });
     } catch (error) {
       console.error("Logout failed:", error.message);
