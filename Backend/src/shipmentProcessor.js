@@ -6,13 +6,19 @@
 import Tesseract from 'tesseract.js';
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
 import { ManifestParser } from './manifestParser.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 export class ShipmentProcessor {
-  constructor(manifestDir, uniqueIdDir) {
+  constructor(manifestDir, uniqueIdDir, modelScriptPath = path.join(__dirname, '..', '..', 'model_build.py')) {
     this.manifestDir = manifestDir;
     this.uniqueIdDir = uniqueIdDir;
     this.manifestCache = new Map();
+    this.modelScriptPath = modelScriptPath; // Path to the Python model script
   }
 
   /**
@@ -72,6 +78,95 @@ export class ShipmentProcessor {
   }
 
   /**
+   * Detect damage in Lego piece image using TensorFlow model
+   * @param {string} imagePath - Path to image file
+   * @returns {Promise<Object>} Damage detection result
+   */
+  async detectDamage(imagePath) {
+    try {
+      console.log(`Detecting damage in: ${imagePath}`);
+
+      // Call Python script directly using child_process
+      const pythonProcess = spawn('python', [this.modelScriptPath, '--predict', imagePath], {
+        cwd: path.dirname(this.modelScriptPath)
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      pythonProcess.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      pythonProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      return new Promise((resolve, reject) => {
+        // Set a timeout - first call loads the 28MB model (~20-40s), subsequent calls are faster
+        const timeout = setTimeout(() => {
+          pythonProcess.kill();
+          reject(new Error('Damage detection timed out after 90 seconds'));
+        }, 90000);
+
+        pythonProcess.on('close', (code) => {
+          clearTimeout(timeout);
+          
+          if (code !== 0) {
+            console.error('Python process error:', stderr);
+            reject(new Error(`Damage detection failed: ${stderr}`));
+            return;
+          }
+
+          try {
+            // Strip ANSI escape codes from stdout
+            const cleanStdout = stdout.replace(/\x1B\[[0-9;]*[mG]/g, '');
+            
+            // Find the JSON line in stdout (it might have logs before it)
+            const lines = cleanStdout.split('\n');
+            const jsonLine = lines.find(line => line.trim().startsWith('{'));
+            
+            if (!jsonLine) {
+              reject(new Error('No JSON output found from Python script'));
+              return;
+            }
+
+            const result = JSON.parse(jsonLine.trim());
+            console.log('Damage detection completed:', result);
+
+            resolve({
+              isDamaged: result.damage_detected,
+              damageProbability: result.damage_probability,
+              confidence: result.confidence,
+              modelUsed: 'TensorFlow_MobileNetV2'
+            });
+          } catch (parseErr) {
+            console.error('Error parsing Python output:', parseErr);
+            console.error('Raw stdout:', stdout);
+            reject(new Error(`Failed to parse model output: ${parseErr.message}`));
+          }
+        });
+
+        pythonProcess.on('error', (err) => {
+          clearTimeout(timeout);
+          console.error('Error spawning Python process:', err);
+          reject(new Error(`Failed to start damage detection: ${err.message}`));
+        });
+      });
+    } catch (err) {
+      console.error('Error detecting damage:', err);
+      // Return safe default if process fails
+      return {
+        isDamaged: false,
+        damageProbability: 0,
+        confidence: 0,
+        error: err.message,
+        modelUsed: 'TensorFlow_MobileNetV2'
+      };
+    }
+  }
+
+  /**
    * Find matching manifest based on image text content
    * @param {string} extractedText - Text extracted from image
    * @returns {Object} Best matching manifest and scores
@@ -117,7 +212,7 @@ export class ShipmentProcessor {
         manifest: manifest.parsedData,
         filename: manifest.filename,
         score,
-        confidence: Math.min(100, score)
+        confidence: Math.min(score / 100, 1) // Normalize to 0-1, 100+ score = 100%
       });
     }
 
@@ -135,9 +230,10 @@ export class ShipmentProcessor {
    * Generate comprehensive JSON output for a shipment
    * @param {Object} matchResult - Result from findMatchingManifest
    * @param {string} imageName - Name of uploaded image
+   * @param {Object} damageResult - Result from damage detection
    * @returns {Object} Complete shipment data as JSON
    */
-  generateShipmentJSON(matchResult, imageName) {
+  generateShipmentJSON(matchResult, imageName, damageResult = null) {
     const { topMatch, allMatches, textExtracted } = matchResult;
 
     const shipmentData = {
@@ -145,7 +241,7 @@ export class ShipmentProcessor {
       imageProcessed: imageName,
       processingResult: {
         success: !!topMatch,
-        confidenceScore: topMatch?.confidence || 0,
+        confidenceScore: topMatch ? Math.round(topMatch.confidence * 100) : null,
         matchedManifest: topMatch?.filename || null,
         alternativeMatches: allMatches
           .slice(1, 3)
@@ -175,7 +271,14 @@ export class ShipmentProcessor {
       metadata: {
         processingStatus: topMatch ? 'SUCCESS' : 'NO_MATCH_FOUND',
         recordsChecked: allMatches.length,
-        extractionMethod: 'OCR_TESSERACT'
+        extractionMethod: 'OCR_TESSERACT',
+        damageDetection: damageResult ? {
+          performed: true,
+          result: damageResult
+        } : {
+          performed: false,
+          reason: 'Damage detection service not available'
+        }
       }
     };
 
@@ -183,7 +286,7 @@ export class ShipmentProcessor {
   }
 
   /**
-   * Process complete workflow: upload -> OCR -> match -> generate JSON
+   * Process complete workflow: upload -> OCR -> match -> damage detection -> generate JSON
    * @param {string} imagePath - Path to uploaded image
    * @returns {Promise<Object>} Complete shipment JSON data
    */
@@ -196,8 +299,11 @@ export class ShipmentProcessor {
     // Step 2: Find matching manifest
     const matchResult = this.findMatchingManifest(extractedText);
 
-    // Step 3: Generate JSON output
-    const shipmentJSON = this.generateShipmentJSON(matchResult, imageName);
+    // Step 3: Detect damage in the image
+    const damageResult = await this.detectDamage(imagePath);
+
+    // Step 4: Generate JSON output
+    const shipmentJSON = this.generateShipmentJSON(matchResult, imageName, damageResult);
 
     return shipmentJSON;
   }
