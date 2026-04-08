@@ -103,11 +103,11 @@ export class ShipmentProcessor {
       });
 
       return new Promise((resolve, reject) => {
-        // Set a timeout for the prediction (30 seconds should be enough)
+        // Set a timeout - first call loads the 28MB model (~20-40s), subsequent calls are faster
         const timeout = setTimeout(() => {
           pythonProcess.kill();
-          reject(new Error('Damage detection timed out after 30 seconds'));
-        }, 30000);
+          reject(new Error('Damage detection timed out after 90 seconds'));
+        }, 90000);
 
         pythonProcess.on('close', (code) => {
           clearTimeout(timeout);
