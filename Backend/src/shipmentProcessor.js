@@ -212,7 +212,7 @@ export class ShipmentProcessor {
         manifest: manifest.parsedData,
         filename: manifest.filename,
         score,
-        confidence: Math.min(100, score)
+        confidence: Math.min(score / 100, 1) // Normalize to 0-1, 100+ score = 100%
       });
     }
 
@@ -241,7 +241,7 @@ export class ShipmentProcessor {
       imageProcessed: imageName,
       processingResult: {
         success: !!topMatch,
-        confidenceScore: topMatch?.confidence || 0,
+        confidenceScore: topMatch ? Math.round(topMatch.confidence * 100) : null,
         matchedManifest: topMatch?.filename || null,
         alternativeMatches: allMatches
           .slice(1, 3)

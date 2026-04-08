@@ -54,10 +54,12 @@ function Results() {
                   <div className="stat-label">Container ID</div>
                   <div className="stat-value">{scan.containerId}</div>
                 </div>
-                <div className="stat">
-                  <div className="stat-label">Confidence</div>
-                  <div className="stat-value">{scan.confidence}%</div>
-                </div>
+                {scan.confidence > 0 && (
+                  <div className="stat">
+                    <div className="stat-label">Confidence</div>
+                    <div className="stat-value">{scan.confidence}%</div>
+                  </div>
+                )}
                 <div className="stat">
                   <div className="stat-label">Status</div>
                   <div className="stat-value">

@@ -1,0 +1,67 @@
+{
+  "timestamp": "2026-03-31T13:31:53.644Z",
+  "imageProcessed": "1774963885166-IMG_5978.jpg",
+  "processingResult": {
+    "success": true,
+    "confidenceScore": 0,
+    "matchedManifest": "Cont-Mnfst-1.txt",
+    "alternativeMatches": [
+      {
+        "filename": "Cont-Mnfst-10.txt",
+        "confidence": 0
+      },
+      {
+        "filename": "Cont-Mnfst-11.txt",
+        "confidence": 0
+      }
+    ]
+  },
+  "ocr": {
+    "extractedTextSample": "\\\n",
+    "fullText": null
+  },
+  "shipmentDetails": {
+    "container": {
+      "number": 1,
+      "title": "Shipping container 1 - manifest (counterfactual)",
+      "countryOfOrigin": "Viet Nam",
+      "portOfLoading": "Ho Chi Minh City, Viet Nam",
+      "portOfDischarge": "Hamburg, Germany",
+      "destination": "Hesse, Germany",
+      "containerId": "ABCU1234567",
+      "isoSize/type": 22,
+      "containerOwnership": "Hapag Lloyd",
+      "conditionAtFirstReceipt": "New (sound)",
+      "tareMass": 2280,
+      "maxGrossMass": 30480
+    },
+    "items": [
+      {
+        "description": "Coffee grounds",
+        "itemCode": "ITM-NBT-24WS-01",
+        "quantity": 500,
+        "packaging": 40,
+        "netMass": 6800,
+        "grossMass": 7200
+      }
+    ],
+    "summary": {
+      "totalItems": 1,
+      "totalGrossMass": 7200
+    }
+  },
+  "metadata": {
+    "processingStatus": "SUCCESS",
+    "recordsChecked": 5,
+    "extractionMethod": "OCR_TESSERACT",
+    "damageDetection": {
+      "performed": true,
+      "result": {
+        "isDamaged": true,
+        "damageProbability": 0.7074532508850098,
+        "confidence": 0.7074532508850098,
+        "modelUsed": "TensorFlow_MobileNetV2"
+      }
+    }
+  }
+}

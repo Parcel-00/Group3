@@ -66,7 +66,7 @@ function Logger() {
                     <tr key={`${scan.timestamp}-${scan.containerId}-${index}`}>
                       <td>{formatTime(scan.timestamp)}</td>
                       <td>{scan.containerId}</td>
-                      <td>{scan.confidence ?? 0}%</td>
+                      <td>{scan.confidence > 0 ? `${scan.confidence}%` : "N/A"}</td>
                       <td>
                         <span className={pillClass(scan.status)}>
                           {scan.status}
