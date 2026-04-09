@@ -5,6 +5,131 @@
 
 import { supabase } from "./supabaseClient.js";
 
+let facilitiesMatchCache = null;
+let facilitiesMatchCacheAt = 0;
+const FACILITIES_MATCH_TTL_MS = 60_000;
+
+async function getFacilitiesForMatching() {
+  const now = Date.now();
+  if (
+    facilitiesMatchCache &&
+    now - facilitiesMatchCacheAt < FACILITIES_MATCH_TTL_MS
+  ) {
+    return facilitiesMatchCache;
+  }
+  const { data, error } = await supabase
+    .from("facilities")
+    .select("id, name, code");
+  if (error) {
+    console.warn("getFacilitiesForMatching:", error.message);
+    return [];
+  }
+  facilitiesMatchCache = data ?? [];
+  facilitiesMatchCacheAt = now;
+  return facilitiesMatchCache;
+}
+
+function normalizeLocationText(s) {
+  if (!s || typeof s !== "string") return "";
+  return s
+    .toLowerCase()
+    .replace(/[,\-–—]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function scoreFacilityMatch(addressNorm, facility) {
+  if (!addressNorm || !facility) return 0;
+  const name = normalizeLocationText(facility.name || "");
+  const code = (facility.code || "").toLowerCase().trim();
+  let score = 0;
+  if (code && addressNorm.includes(code)) score += 80;
+  const words = name.split(" ").filter((w) => w.length > 2);
+  for (const w of words) {
+    if (addressNorm.includes(w)) score += Math.min(w.length, 12);
+  }
+  if (name.length > 3 && addressNorm.includes(name)) score += 35;
+  return score;
+}
+
+/**
+ * Pick best facilities row for a manifest location string (e.g. "Hamburg, Germany").
+ */
+function matchFacilityIdForAddress(addressText, facilities) {
+  if (!addressText || !facilities?.length) return null;
+  const addressNorm = normalizeLocationText(addressText);
+  let bestId = null;
+  let bestScore = 0;
+  for (const f of facilities) {
+    const s = scoreFacilityMatch(addressNorm, f);
+    if (s > bestScore) {
+      bestScore = s;
+      bestId = f.id;
+    }
+  }
+  return bestScore >= 4 ? bestId : null;
+}
+
+function pickContainerLocationField(container, keys) {
+  for (const k of keys) {
+    const v = container[k];
+    if (v != null && String(v).trim() !== "") return String(v).trim();
+  }
+  return null;
+}
+
+/**
+ * Map manifest ports to facility IDs: current ≈ port of loading, next ≈ port of discharge (else destination).
+ */
+async function resolveScheduleFacilitiesFromManifest(container) {
+  const facilities = await getFacilitiesForMatching();
+  if (!facilities.length) {
+    return { current_facility_id: null, next_facility_id: null };
+  }
+
+  const loading = pickContainerLocationField(container, [
+    "portOfLoading",
+    "port_of_loading",
+  ]);
+  const discharge = pickContainerLocationField(container, [
+    "portOfDischarge",
+    "port_of_discharge",
+  ]);
+  const destination = pickContainerLocationField(container, [
+    "destination",
+  ]);
+
+  const current_facility_id = loading
+    ? matchFacilityIdForAddress(loading, facilities)
+    : null;
+  let next_facility_id = discharge
+    ? matchFacilityIdForAddress(discharge, facilities)
+    : null;
+  if (next_facility_id == null && destination) {
+    next_facility_id = matchFacilityIdForAddress(destination, facilities);
+  }
+
+  return { current_facility_id, next_facility_id };
+}
+
+/**
+ * When containers.status is missing in DB, still avoid overwriting manifest current_facility
+ * after a RECEIVED/RETURNED event was recorded.
+ */
+async function hasReceivedOrReturnedEvent(containerDbId) {
+  const { data, error } = await supabase
+    .from("container_events")
+    .select("id")
+    .eq("container_id", containerDbId)
+    .in("event_type", ["RECEIVED", "RETURNED"])
+    .limit(1);
+  if (error) {
+    console.warn("hasReceivedOrReturnedEvent:", error.message);
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
+}
+
 /**
  * Get or create an address by display text and type
  */
@@ -119,32 +244,81 @@ export async function saveManifest(parsedData, manifestId = null) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data: existingContainer } = await supabase
+    const schedule = await resolveScheduleFacilitiesFromManifest(container);
+    containerRow.next_facility_id = schedule.next_facility_id;
+
+    const { data: existingContainer, error: existingErr } = await supabase
       .from("containers")
       .select("id")
       .eq("container_id", containerId)
-      .single();
+      .maybeSingle();
+
+    if (existingErr) {
+      console.warn("saveManifest lookup:", existingErr.message);
+    }
+
+    let preserveCurrentFacility = false;
+    if (existingContainer?.id) {
+      preserveCurrentFacility = await hasReceivedOrReturnedEvent(
+        existingContainer.id,
+      );
+    }
+
+    if (!existingContainer || !preserveCurrentFacility) {
+      containerRow.current_facility_id = schedule.current_facility_id;
+    }
 
     let dbContainerId;
 
-    if (existingContainer) {
-      await supabase
+    if (existingContainer?.id) {
+      const { error: updErr } = await supabase
         .from("containers")
         .update(containerRow)
         .eq("id", existingContainer.id);
+      if (updErr) {
+        console.error("Error updating container:", updErr);
+        return null;
+      }
       dbContainerId = existingContainer.id;
     } else {
-      const { data: inserted, error } = await supabase
+      const { data: inserted, error: insErr } = await supabase
         .from("containers")
         .insert(containerRow)
         .select("id")
         .single();
 
-      if (error) {
-        console.error("Error inserting container:", error);
+      if (insErr?.code === "23505") {
+        const { data: raced } = await supabase
+          .from("containers")
+          .select("id")
+          .eq("container_id", containerId)
+          .maybeSingle();
+        if (raced?.id) {
+          const lock = await hasReceivedOrReturnedEvent(raced.id);
+          if (!lock) {
+            containerRow.current_facility_id = schedule.current_facility_id;
+          } else {
+            delete containerRow.current_facility_id;
+          }
+          const { error: raceUpd } = await supabase
+            .from("containers")
+            .update(containerRow)
+            .eq("id", raced.id);
+          if (raceUpd) {
+            console.error("Error updating container after duplicate:", raceUpd);
+            return null;
+          }
+          dbContainerId = raced.id;
+        } else {
+          console.error("Error inserting container (duplicate but not found):", insErr);
+          return null;
+        }
+      } else if (insErr) {
+        console.error("Error inserting container:", insErr);
         return null;
+      } else {
+        dbContainerId = inserted.id;
       }
-      dbContainerId = inserted.id;
     }
 
     if (parsedData.items?.length) {
@@ -224,6 +398,46 @@ export async function logScanEvent(
   }
 }
 
+async function resolveContainerByBusinessId(containerId) {
+  const trimmed =
+    containerId != null && typeof containerId === "string"
+      ? containerId.trim()
+      : containerId;
+
+  const { data: container, error } = await supabase
+    .from("containers")
+    .select("id")
+    .eq("container_id", trimmed)
+    .maybeSingle();
+
+  if (error) return { error: error.message };
+  if (!container?.id) return { error: "Container not found" };
+  return { container };
+}
+
+async function writeContainerEvent(
+  containerDbId,
+  eventType,
+  { facilityId, notes, userId } = {},
+) {
+  const eventRow = {
+    container_id: containerDbId,
+    event_type: eventType,
+    facility_id: facilityId ?? null,
+    notes: notes != null && notes !== "" ? String(notes) : null,
+    user_id: userId ?? null,
+  };
+
+  const { data: event, error } = await supabase
+    .from("container_events")
+    .insert(eventRow)
+    .select("id, event_type, created_at, facility_id, notes")
+    .single();
+
+  if (error) return { error: error.message };
+  return { event };
+}
+
 /**
  * Record that a container was physically received (yard / warehouse).
  * Inserts RECEIVED into container_events and updates containers.status when columns exist.
@@ -240,38 +454,20 @@ export async function receiveContainer(containerId, options = {}) {
       return { ok: false, error: "containerId is required" };
     }
 
-    const trimmed = containerId.trim();
-    const { data: container, error: fetchError } = await supabase
-      .from("containers")
-      .select("id")
-      .eq("container_id", trimmed)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error("receiveContainer lookup:", fetchError);
-      return { ok: false, error: fetchError.message };
-    }
-    if (!container?.id) {
-      return { ok: false, error: "Container not found" };
+    const { container, error: lookupError } =
+      await resolveContainerByBusinessId(containerId);
+    if (lookupError) {
+      return { ok: false, error: lookupError };
     }
 
-    const eventRow = {
-      container_id: container.id,
-      event_type: "RECEIVED",
-      facility_id: facilityId ?? null,
-      notes: notes != null && notes !== "" ? String(notes) : null,
-      user_id: userId ?? null,
-    };
-
-    const { data: event, error: insertError } = await supabase
-      .from("container_events")
-      .insert(eventRow)
-      .select("id, event_type, created_at, facility_id, notes")
-      .single();
-
-    if (insertError) {
-      console.error("receiveContainer insert:", insertError);
-      return { ok: false, error: insertError.message };
+    const { event, error: eventError } = await writeContainerEvent(
+      container.id,
+      "RECEIVED",
+      { facilityId, notes, userId },
+    );
+    if (eventError) {
+      console.error("receiveContainer insert:", eventError);
+      return { ok: false, error: eventError };
     }
 
     const updatePayload = {
@@ -301,37 +497,98 @@ export async function receiveContainer(containerId, options = {}) {
 
 export async function reportDamage(
   containerId,
-  { damageType, notes, userId } = {},
+  { notes, userId } = {},
 ) {
   try {
-    const { data: container } = await supabase
-      .from("containers")
-      .select("id")
-      .eq("container_id", containerId)
-      .single();
-    if (!container?.id) {
-      return { ok: false, error: "Container not found" };
+    const { container, error: lookupError } =
+      await resolveContainerByBusinessId(containerId);
+    if (lookupError) {
+      return { ok: false, error: lookupError };
     }
 
-    const eventRow = {
-      container_id: container.id,
-      event_type: "DAMAGE_REPORTED",
-      damage_type: damageType ?? null,
-      notes: notes != null && notes !== "" ? String(notes) : null,
-      user_id: userId ?? null,
-    };
-    const { data: event, error: insertError } = await supabase
-      .from("container_events")
-      .insert(eventRow)
-      .select("id, event_type, created_at, damage_type, notes")
-      .single();
-    if (insertError) {
-      console.error("reportDamage insert:", insertError);
-      return { ok: false, error: insertError.message };
+    const { event, error: eventError } = await writeContainerEvent(
+      container.id,
+      "DAMAGE_REPORTED",
+      { notes, userId },
+    );
+    if (eventError) {
+      console.error("reportDamage insert:", eventError);
+      return { ok: false, error: eventError };
     }
+
     return { ok: true, dbId: container.id, event };
   } catch (err) {
     console.error("reportDamage:", err);
+    return { ok: false, error: err?.message ?? "Unknown error" };
+  }
+}
+
+export async function forwardContainer(
+  containerId,
+  { facilityId, notes, userId } = {},
+) {
+  try {
+    const { container, error: lookupError } =
+      await resolveContainerByBusinessId(containerId);
+    if (lookupError) {
+      return { ok: false, error: lookupError };
+    }
+
+    const { event, error: eventError } = await writeContainerEvent(
+      container.id,
+      "FORWARDED",
+      { facilityId, notes, userId },
+    );
+    if (eventError) {
+      console.error("forwardContainer insert:", eventError);
+      return { ok: false, error: eventError };
+    }
+
+    return { ok: true, dbId: container.id, event };
+  } catch (err) {
+    console.error("forwardContainer:", err);
+    return { ok: false, error: err?.message ?? "Unknown error" };
+  }
+}
+
+export async function returnContainer(
+  containerId,
+  { facilityId, notes, userId } = {},
+) {
+  try {
+    const { container, error: lookupError } =
+      await resolveContainerByBusinessId(containerId);
+    if (lookupError) {
+      return { ok: false, error: lookupError };
+    }
+
+    const { event, error: eventError } = await writeContainerEvent(
+      container.id,
+      "RETURNED",
+      { facilityId, notes, userId },
+    );
+    if (eventError) {
+      console.error("returnContainer insert:", eventError);
+      return { ok: false, error: eventError };
+    }
+
+    const updatePayload = {
+      updated_at: new Date().toISOString(),
+      status: "RETURNED",
+      current_facility_id: facilityId ?? null,
+    };
+    const { error: updateError } = await supabase
+      .from("containers")
+      .update(updatePayload)
+      .eq("id", container.id);
+    if (updateError) {
+      console.error("returnContainer update:", updateError);
+      return { ok: false, error: updateError.message };
+    }
+
+    return { ok: true, dbId: container.id, event };
+  } catch (err) {
+    console.error("returnContainer:", err);
     return { ok: false, error: err?.message ?? "Unknown error" };
   }
 }

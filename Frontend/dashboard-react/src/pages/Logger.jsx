@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TopNav from "../components/TopNav";
-import { clearScans, getScans } from "../data/scanStore";
+import { supabase } from "../supabaseClient";
 
 function pillClass(status) {
   if (status === "SUCCESS") return "pill pill--ok";
@@ -16,13 +16,48 @@ function formatTime(value) {
 }
 
 function Logger() {
-  const [scans, setScans] = useState(() => getScans());
+  const [scans, setScans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
-  const refresh = () => setScans(getScans());
-  const clear = () => {
-    clearScans();
-    setScans([]);
+  const refresh = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) throw new Error("You must be signed in.");
+
+      const response = await fetch(`${API_BASE_URL}/api/shipments/history`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to load shipment history.");
+      }
+
+      const history = (payload?.history ?? []).map((entry) => ({
+        timestamp: entry.timestamp,
+        containerId: entry.containerId ?? "Unknown",
+        confidence: entry.confidence ?? 0,
+        status: "SUCCESS",
+        matchedManifest: "DB Event",
+        imageName: entry.imageName ?? "N/A",
+      }));
+
+      setScans(history);
+    } catch (err) {
+      setError(err.message || "Failed to load logger history.");
+      setScans([]);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   return (
     <main className="shell shell-wide">
@@ -33,7 +68,7 @@ function Logger() {
           <div>
             <h3>Logger</h3>
             <p className="hint">
-              The shipment scan history is stored locally in this browser.
+              The shipment scan history is loaded from Supabase via backend API.
             </p>
           </div>
 
@@ -41,12 +76,13 @@ function Logger() {
             <button type="button" className="button" onClick={refresh}>
               Refresh
             </button>
-            <button type="button" className="button ghost" onClick={clear}>
-              Clear
-            </button>
           </div>
 
-          {scans.length === 0 ? (
+          {loading ? (
+            <div className="empty-state">Loading shipment history...</div>
+          ) : error ? (
+            <div className="msg bad">{error}</div>
+          ) : scans.length === 0 ? (
             <div className="empty-state">No manifest data available.</div>
           ) : (
             <div className="table-wrap">

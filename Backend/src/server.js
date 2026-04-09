@@ -12,7 +12,14 @@ import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { ShipmentProcessor } from "./shipmentProcessor.js";
 import { supabase } from "./supabaseClient.js";
-import { saveManifest, logScanEvent, receiveContainer } from "./shipmentDb.js";
+import {
+  saveManifest,
+  logScanEvent,
+  receiveContainer,
+  reportDamage,
+  forwardContainer,
+  returnContainer,
+} from "./shipmentDb.js";
 
 
 
@@ -163,7 +170,7 @@ app.get("/api/containers", async (req, res) => {
     const { data: containers, error } = await supabase
       .from("containers")
       .select(
-        "id, container_id, manifest_number, title, iso_size_type, ownership, condition, tare_mass_kg, max_gross_mass_kg, created_at, origin_address_id, port_loading_id, port_discharge_id, destination_id"
+        "id, container_id, manifest_number, title, iso_size_type, ownership, condition, tare_mass_kg, max_gross_mass_kg, created_at, origin_address_id, port_loading_id, port_discharge_id, destination_id, current_facility_id, next_facility_id, status",
       )
       .order("created_at", { ascending: false });
 
@@ -173,10 +180,13 @@ app.get("/api/containers", async (req, res) => {
 
     // Fetch address display text for each container
     const addressIds = new Set();
+    const facilityIds = new Set();
     (containers ?? []).forEach((c) => {
       [c.origin_address_id, c.port_loading_id, c.port_discharge_id, c.destination_id].forEach(
-        (id) => id && addressIds.add(id)
+        (id) => id && addressIds.add(id),
       );
+      if (c.current_facility_id) facilityIds.add(c.current_facility_id);
+      if (c.next_facility_id) facilityIds.add(c.next_facility_id);
     });
     const { data: addresses } = await supabase
       .from("addresses")
@@ -188,12 +198,26 @@ app.get("/api/containers", async (req, res) => {
       return acc;
     }, {});
 
+    let facilityMap = {};
+    if (facilityIds.size > 0) {
+      const { data: facRows } = await supabase
+        .from("facilities")
+        .select("id, name, code")
+        .in("id", [...facilityIds]);
+      facilityMap = (facRows ?? []).reduce((acc, f) => {
+        acc[f.id] = f;
+        return acc;
+      }, {});
+    }
+
     const enriched = (containers ?? []).map((c) => ({
       ...c,
       origin: addrMap[c.origin_address_id]?.display_text ?? null,
       port_loading: addrMap[c.port_loading_id]?.display_text ?? null,
       port_discharge: addrMap[c.port_discharge_id]?.display_text ?? null,
       destination: addrMap[c.destination_id]?.display_text ?? null,
+      current_facility: facilityMap[c.current_facility_id] ?? null,
+      next_facility: facilityMap[c.next_facility_id] ?? null,
     }));
 
     res.json({ count: enriched.length, containers: enriched });
@@ -249,6 +273,146 @@ app.get("/api/containers/:id", async (req, res) => {
 });
 
 /**
+ * Get facilities list for receiver workflows
+ */
+app.get("/api/facilities", async (req, res) => {
+  try {
+    let raw;
+    let error;
+    ({ data: raw, error } = await supabase
+      .from("facilities")
+      .select("*")
+      .order("name", { ascending: true }));
+    if (error) {
+      ({ data: raw, error } = await supabase
+        .from("facilities")
+        .select("*")
+        .order("id", { ascending: true }));
+    }
+
+    if (error) {
+      console.error("GET /api/facilities:", error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    const rows = raw ?? [];
+    const facilities = rows.map((r) => ({
+      id: r.id,
+      name: r.name ?? r.title ?? r.facility_name ?? "Facility",
+      code: r.code ?? r.facility_code ?? null,
+    }));
+
+    if (facilities.length === 0) {
+      console.warn(
+        "GET /api/facilities: 0 rows (check RLS policies, table name public.facilities, or SUPABASE_SERVICE_ROLE_KEY on backend).",
+      );
+    }
+
+    res.json({ count: facilities.length, facilities });
+  } catch (err) {
+    console.error("Error fetching facilities:", err);
+    res.status(500).json({ error: "Failed to fetch facilities" });
+  }
+});
+
+/**
+ * Get containers currently at a facility or scheduled to arrive there.
+ */
+function sameFacilityId(a, b) {
+  if (a == null || b == null) return false;
+  return String(a) === String(b);
+}
+
+app.get("/api/facilities/:id/containers", async (req, res) => {
+  try {
+    const facilityId = req.params.id;
+
+    const { data: atOrScheduled, error: atFacilityError } = await supabase
+      .from("containers")
+      .select("id")
+      .or(
+        `current_facility_id.eq.${facilityId},next_facility_id.eq.${facilityId}`,
+      );
+
+    if (atFacilityError) {
+      return res.status(500).json({ error: atFacilityError.message });
+    }
+
+    const { data: lifecycleEvents, error: eventsError } = await supabase
+      .from("container_events")
+      .select("container_id, event_type, facility_id, created_at")
+      .in("event_type", ["FORWARDED", "RECEIVED", "RETURNED"])
+      .order("created_at", { ascending: false });
+
+    if (eventsError) {
+      return res.status(500).json({ error: eventsError.message });
+    }
+
+    const latestByContainer = new Map();
+    for (const event of lifecycleEvents ?? []) {
+      if (!latestByContainer.has(event.container_id)) {
+        latestByContainer.set(event.container_id, event);
+      }
+    }
+
+    const scheduledIds = [];
+    for (const event of latestByContainer.values()) {
+      if (
+        event.event_type === "FORWARDED" &&
+        sameFacilityId(event.facility_id, facilityId) &&
+        event.container_id
+      ) {
+        scheduledIds.push(event.container_id);
+      }
+    }
+
+    const columnMatchIds = (atOrScheduled ?? []).map((row) => row.id);
+    const containerIds = [...new Set([...columnMatchIds, ...scheduledIds])];
+    if (containerIds.length === 0) {
+      return res.json({ count: 0, containers: [] });
+    }
+
+    const { data: containers, error: containersError } = await supabase
+      .from("containers")
+      .select("id, container_id, status, current_facility_id, next_facility_id")
+      .in("id", containerIds)
+      .order("container_id", { ascending: true });
+
+    if (containersError) {
+      return res.status(500).json({ error: containersError.message });
+    }
+
+    res.json({ count: containers?.length ?? 0, containers: containers ?? [] });
+  } catch (err) {
+    console.error("Error fetching facility containers:", err);
+    res.status(500).json({ error: "Failed to fetch facility containers" });
+  }
+});
+
+/**
+ * Get event history for a container (container DB uuid)
+ */
+app.get("/api/containers/:id/events", async (req, res) => {
+  try {
+    const containerDbId = req.params.id;
+    const { data, error } = await supabase
+      .from("container_events")
+      .select("id, event_type, facility_id, notes, user_id, created_at")
+      .eq("container_id", containerDbId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ count: data?.length ?? 0, events: data ?? [] });
+  } catch (err) {
+    console.error("Error fetching container events:", err);
+    res.status(500).json({ error: "Failed to fetch container events" });
+  }
+});
+
+/**
  * Mark a container as received (writes RECEIVED to container_events)
  * Body: { containerId: string (business id / ISO number), facilityId?, notes? }
  */
@@ -275,6 +439,80 @@ app.post("/api/containers/receive", async (req, res) => {
   } catch (err) {
     console.error("Error receiving container:", err);
     res.status(500).json({ error: "Failed to record receive" });
+  }
+});
+
+app.post("/api/containers/forward", async (req, res) => {
+  try {
+    const { containerId, facilityId, notes } = req.body ?? {};
+    const result = await forwardContainer(containerId, {
+      facilityId: facilityId ?? null,
+      notes: notes ?? null,
+      userId: req.user?.id ?? null,
+    });
+
+    if (!result.ok) {
+      const status = result.error === "Container not found" ? 404 : 400;
+      return res.status(status).json({ error: result.error });
+    }
+
+    res.status(201).json({
+      success: true,
+      containerDbId: result.dbId,
+      event: result.event,
+    });
+  } catch (err) {
+    console.error("Error forwarding container:", err);
+    res.status(500).json({ error: "Failed to forward container" });
+  }
+});
+
+app.post("/api/containers/return", async (req, res) => {
+  try {
+    const { containerId, facilityId, notes } = req.body ?? {};
+    const result = await returnContainer(containerId, {
+      facilityId: facilityId ?? null,
+      notes: notes ?? null,
+      userId: req.user?.id ?? null,
+    });
+
+    if (!result.ok) {
+      const status = result.error === "Container not found" ? 404 : 400;
+      return res.status(status).json({ error: result.error });
+    }
+
+    res.status(201).json({
+      success: true,
+      containerDbId: result.dbId,
+      event: result.event,
+    });
+  } catch (err) {
+    console.error("Error returning container:", err);
+    res.status(500).json({ error: "Failed to return container" });
+  }
+});
+
+app.post("/api/containers/damage", async (req, res) => {
+  try {
+    const { containerId, notes } = req.body ?? {};
+    const result = await reportDamage(containerId, {
+      notes: notes ?? null,
+      userId: req.user?.id ?? null,
+    });
+
+    if (!result.ok) {
+      const status = result.error === "Container not found" ? 404 : 400;
+      return res.status(status).json({ error: result.error });
+    }
+
+    res.status(201).json({
+      success: true,
+      containerDbId: result.dbId,
+      event: result.event,
+    });
+  } catch (err) {
+    console.error("Error reporting damage:", err);
+    res.status(500).json({ error: "Failed to report damage" });
   }
 });
 
@@ -459,37 +697,27 @@ app.get("/api/shipments/download/:filename", async (req, res) => {
  */
 app.get("/api/shipments/history", async (req, res) => {
   try {
-    const shipmentDir = path.join(__dirname, "../shipments");
-    let files = [];
+    const { data, error } = await supabase
+      .from("scan_events")
+      .select(
+        "id, image_filename, confidence_score, created_at, user_id, containers(container_id)"
+      )
+      .order("created_at", { ascending: false });
 
-    try {
-      files = await fs.readdir(shipmentDir);
-    } catch {
-      return res.json({ history: [] });
+    if (error) {
+      return res.status(500).json({ error: error.message });
     }
 
-    const history = await Promise.all(
-      files
-        .filter((f) => f.endsWith(".json"))
-        .map(async (f) => {
-          const data = await fs.readFile(path.join(shipmentDir, f), "utf-8");
-          const parsed = JSON.parse(data);
-          return {
-            filename: f,
-            timestamp: parsed.timestamp,
-            imageProcessed: parsed.imageProcessed,
-            success: parsed.processingResult.success,
-            confidence: parsed.processingResult.confidenceScore,
-          };
-        }),
-    );
+    const history = (data ?? []).map((row) => ({
+      id: row.id,
+      timestamp: row.created_at,
+      imageName: row.image_filename,
+      confidence: row.confidence_score,
+      containerId: row.containers?.container_id ?? null,
+      userId: row.user_id ?? null,
+    }));
 
-    res.json({
-      count: history.length,
-      history: history.sort(
-        (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
-      ),
-    });
+    res.json({ count: history.length, history });
   } catch (err) {
     console.error("Error fetching history:", err);
     res.status(500).json({ error: "Failed to fetch history" });

@@ -10,5 +10,12 @@ export default defineConfig({
     host: true,
     https: true, // Enable HTTPS for camera access
     allowedHosts: [".trycloudflare.com"], //HTTPS MUST BE FALSE IF YOU ARE TO TUNNEL
+    proxy: {
+      "/api": {
+        target: "http://localhost:5001",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 })
