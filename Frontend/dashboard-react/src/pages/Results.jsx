@@ -54,10 +54,12 @@ function Results() {
                   <div className="stat-label">Container ID</div>
                   <div className="stat-value">{scan.containerId}</div>
                 </div>
-                <div className="stat">
-                  <div className="stat-label">Confidence</div>
-                  <div className="stat-value">{scan.confidence}%</div>
-                </div>
+                {scan.confidence > 0 && (
+                  <div className="stat">
+                    <div className="stat-label">Confidence</div>
+                    <div className="stat-value">{scan.confidence}%</div>
+                  </div>
+                )}
                 <div className="stat">
                   <div className="stat-label">Status</div>
                   <div className="stat-value">
@@ -78,11 +80,39 @@ function Results() {
                   <div className="stat-label">Item count</div>
                   <div className="stat-value">{totalItems}</div>
                 </div>
+                {shipmentData?.metadata?.damageDetection?.performed && (
+                  <div className="stat">
+                    <div className="stat-label">Damage Status</div>
+                    <div className="stat-value">
+                      <span className={shipmentData.metadata.damageDetection.result.isDamaged ? "pill pill--bad" : "pill pill--ok"}>
+                        {shipmentData.metadata.damageDetection.result.isDamaged ? "DAMAGED" : "GOOD"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {shipmentData?.metadata?.damageDetection?.performed && (
+                  <div className="stat">
+                    <div className="stat-label">Damage Confidence</div>
+                    <div className="stat-value">
+                      {Math.round(shipmentData.metadata.damageDetection.result.confidence * 100)}%
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="msg">
                 <strong>Timestamp:</strong> {formatTimestamp(scan.timestamp)}
               </div>
+
+              {shipmentData?.metadata?.damageDetection?.performed && (
+                <div className="msg">
+                  <strong>Damage Detection Results:</strong><br />
+                  <strong>Status:</strong> {shipmentData.metadata.damageDetection.result.isDamaged ? "Damaged (black marks detected)" : "No damage detected"}<br />
+                  <strong>Damage Probability:</strong> {Math.round(shipmentData.metadata.damageDetection.result.damageProbability * 100)}%<br />
+                  <strong>Confidence:</strong> {Math.round(shipmentData.metadata.damageDetection.result.confidence * 100)}%<br />
+                  <strong>Model:</strong> {shipmentData.metadata.damageDetection.result.modelUsed}
+                </div>
+              )}
 
               <div className="row">
                 <button

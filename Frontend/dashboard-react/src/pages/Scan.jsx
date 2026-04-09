@@ -94,7 +94,7 @@ function Scan() {
       const scan = {
         timestamp: shipmentData?.timestamp || new Date().toISOString(),
         containerId: parsedContainerId || containerId.trim() || "Unknown",
-        confidence: shipmentData?.processingResult?.confidenceScore ?? 0,
+        confidence: shipmentData?.processingResult?.confidenceScore,
         status: normalizeStatus(shipmentData),
         imageName: shipmentData?.imageProcessed || selectedFile.name,
         matchedManifest:

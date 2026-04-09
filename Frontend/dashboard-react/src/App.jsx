@@ -9,7 +9,7 @@ import Results from "./pages/Results";
 import Scan from "./pages/Scan";
 import ShipmentStatus from "./pages/ShipmentStatus";
 import { supabase } from "./supabaseClient";
-
+// import ShipmentStatus from "./pages/ShipmentStatus";
 function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -39,7 +39,7 @@ function App() {
   }, []);
 
   const ProtectedRoute = ({ children }) => {
-    if (authLoading) return null;
+    if (authLoading) return <div className="loading">Checking authentication...</div>;
     if (!session) return <Navigate to="/" replace />;
     return children;
   };
