@@ -397,7 +397,7 @@ app.get("/api/containers/:id/events", async (req, res) => {
     const containerDbId = req.params.id;
     const { data, error } = await supabase
       .from("container_events")
-      .select("id, event_type, facility_id, notes, user_id, created_at")
+      .select("id, event_type, facility_id, notes, created_at")
       .eq("container_id", containerDbId)
       .order("created_at", { ascending: false });
 

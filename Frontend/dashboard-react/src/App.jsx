@@ -6,10 +6,17 @@ import Dashboard from "./pages/Dashboard";
 import Logger from "./pages/Logger";
 import Login from "./pages/Login";
 import Results from "./pages/Results";
-import Scan from "./pages/Scan";
 import ShipmentStatus from "./pages/ShipmentStatus";
-import Facilities from "./pages/Facilities"; // 1. Import your new page
+import Receiver from "./pages/Receiver";
 import supabase from "./supabaseClient"; // 2. CRITICAL: Added this import to fix white screen
+
+function ProtectedRoute({ children, authLoading, session }) {
+  if (authLoading) {
+    return <div className="loading">Checking authentication...</div>;
+  }
+  if (!session) return <Navigate to="/" replace />;
+  return children;
+}
 
 function App() {
   const [session, setSession] = useState(null);
@@ -40,13 +47,6 @@ function App() {
     };
   }, []);
 
-  const ProtectedRoute = ({ children }) => {
-    if (authLoading)
-      return <div className="loading">Checking authentication...</div>;
-    if (!session) return <Navigate to="/" replace />;
-    return children;
-  };
-
   return (
     <>
       <div className="bg-slideshow" aria-hidden="true">
@@ -72,32 +72,31 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute authLoading={authLoading} session={session}>
               <Dashboard />
             </ProtectedRoute>
           }
         />
-        {/* 3. Added the Facilities tab route here */}
         <Route
-          path="/facilities"
+          path="/receiver"
           element={
-            <ProtectedRoute>
-              <Facilities />
+            <ProtectedRoute authLoading={authLoading} session={session}>
+              <Receiver />
             </ProtectedRoute>
           }
         />
         <Route
           path="/scan"
           element={
-            <ProtectedRoute>
-              <Scan />
+            <ProtectedRoute authLoading={authLoading} session={session}>
+              <Receiver />
             </ProtectedRoute>
           }
         />
         <Route
           path="/results"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute authLoading={authLoading} session={session}>
               <Results />
             </ProtectedRoute>
           }
@@ -105,7 +104,7 @@ function App() {
         <Route
           path="/logger"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute authLoading={authLoading} session={session}>
               <Logger />
             </ProtectedRoute>
           }
@@ -113,7 +112,7 @@ function App() {
         <Route
           path="/about"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute authLoading={authLoading} session={session}>
               <About />
             </ProtectedRoute>
           }

@@ -9,9 +9,9 @@ const navItems = [
     description: "Overview, quick actions, and system status.",
   },
   {
-    to: "/facilities",
-    label: "Facilities",
-    description: "Browse facility locations and related details.",
+    to: "/receiver",
+    label: "Receiver",
+    description: "Receive, route, and scan container IDs.",
   },
   {
     to: "/scan",

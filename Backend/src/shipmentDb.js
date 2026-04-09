@@ -425,17 +425,38 @@ async function writeContainerEvent(
     event_type: eventType,
     facility_id: facilityId ?? null,
     notes: notes != null && notes !== "" ? String(notes) : null,
+  };
+
+  const eventRowWithUser = {
+    ...eventRow,
     user_id: userId ?? null,
   };
 
-  const { data: event, error } = await supabase
+  const { data: eventWithUser, error: withUserError } = await supabase
     .from("container_events")
-    .insert(eventRow)
+    .insert(eventRowWithUser)
     .select("id, event_type, created_at, facility_id, notes")
     .single();
 
-  if (error) return { error: error.message };
-  return { event };
+  // Some environments don't have container_events.user_id yet.
+  // Retry without user_id so core lifecycle events still work.
+  if (
+    withUserError?.message?.includes(
+      "Could not find the 'user_id' column of 'container_events'",
+    )
+  ) {
+    const { data: eventNoUser, error: noUserError } = await supabase
+      .from("container_events")
+      .insert(eventRow)
+      .select("id, event_type, created_at, facility_id, notes")
+      .single();
+
+    if (noUserError) return { error: noUserError.message };
+    return { event: eventNoUser };
+  }
+
+  if (withUserError) return { error: withUserError.message };
+  return { event: eventWithUser };
 }
 
 /**
