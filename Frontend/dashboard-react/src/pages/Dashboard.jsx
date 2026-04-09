@@ -19,7 +19,7 @@ function Dashboard() {
           I don't think this block is necessary*/}
 
           <h1>Parcelᵀᴹ</h1>
-          <p className="subtitle">❝ We cut out the middle men.</p>
+          <p className="subtitle">We cut out the middle men.</p>
         </div>
 
         <div className="actions" role="navigation" aria-label="Primary actions">
@@ -44,7 +44,14 @@ function Dashboard() {
           >
             About
           </button>
-
+          
+          <button
+            type="button"
+            className="button"
+            onClick={() => navigate("/shipment-status")}
+          >
+            Shipment Status
+          </button>
         </div>
 
         <div className="panel">

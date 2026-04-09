@@ -7,6 +7,7 @@ import Logger from "./pages/Logger";
 import Login from "./pages/Login";
 import Results from "./pages/Results";
 import Scan from "./pages/Scan";
+import ShipmentStatus from "./pages/ShipmentStatus";
 import Facilities from "./pages/Facilities"; // 1. Import your new page
 import supabase from "./supabaseClient"; // 2. CRITICAL: Added this import to fix white screen
 
@@ -40,7 +41,8 @@ function App() {
   }, []);
 
   const ProtectedRoute = ({ children }) => {
-    if (authLoading) return <div className="loading">Checking authentication...</div>;
+    if (authLoading)
+      return <div className="loading">Checking authentication...</div>;
     if (!session) return <Navigate to="/" replace />;
     return children;
   };
@@ -60,7 +62,11 @@ function App() {
         <Route
           path="/"
           element={
-            session && !authLoading ? <Navigate to="/dashboard" replace /> : <Login />
+            session && !authLoading ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Login />
+            )
           }
         />
         <Route
@@ -109,6 +115,14 @@ function App() {
           element={
             <ProtectedRoute>
               <About />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shipment-status"
+          element={
+            <ProtectedRoute authLoading={authLoading} session={session}>
+              <ShipmentStatus />
             </ProtectedRoute>
           }
         />
