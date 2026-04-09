@@ -19,7 +19,7 @@ function Dashboard() {
           I don't think this block is necessary*/}
 
           <h1>Parcelᵀᴹ</h1>
-          <p className="subtitle">❝ We cut out the middle men.</p>
+          <p className="subtitle">We cut out the middle men.</p>
         </div>
 
         <div className="actions" role="navigation" aria-label="Primary actions">

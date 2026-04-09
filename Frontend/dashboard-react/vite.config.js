@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [react(), basicSsl()],
   server: {
     host: true,
-    https: true, // Enable HTTPS for camera access
+    https: false, // Enable HTTPS for camera access
     allowedHosts: [".trycloudflare.com"], //HTTPS MUST BE FALSE IF YOU ARE TO TUNNEL
   },
 })
