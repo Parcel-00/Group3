@@ -6,7 +6,6 @@ import Dashboard from "./pages/Dashboard";
 import Logger from "./pages/Logger";
 import Login from "./pages/Login";
 import Results from "./pages/Results";
-import ShipmentStatus from "./pages/ShipmentStatus";
 import Receiver from "./pages/Receiver";
 import supabase from "./supabaseClient"; // 2. CRITICAL: Added this import to fix white screen
 
@@ -121,7 +120,7 @@ function App() {
           path="/shipment-status"
           element={
             <ProtectedRoute authLoading={authLoading} session={session}>
-              <ShipmentStatus />
+              <Receiver />
             </ProtectedRoute>
           }
         />

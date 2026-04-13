@@ -28,11 +28,6 @@ const navItems = [
     label: "About",
     description: "Project summary, purpose, and team information.",
   },
-  {
-    to: "/shipment-status",
-    label: "Shipment Status",
-    description: "Track shipment progress and current updates.",
-  },
 ];
 
 function TopNav() {

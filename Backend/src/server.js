@@ -167,12 +167,19 @@ app.get("/api/manifests", (req, res) => {
  */
 app.get("/api/containers", async (req, res) => {
   try {
-    const { data: containers, error } = await supabase
+    const filterBusinessId = req.query?.container_id;
+    let query = supabase
       .from("containers")
       .select(
         "id, container_id, manifest_number, title, iso_size_type, ownership, condition, tare_mass_kg, max_gross_mass_kg, created_at, origin_address_id, port_loading_id, port_discharge_id, destination_id, current_facility_id, next_facility_id, status",
       )
       .order("created_at", { ascending: false });
+
+    if (filterBusinessId) {
+      query = query.eq("container_id", String(filterBusinessId).trim());
+    }
+
+    const { data: containers, error } = await query;
 
     if (error) {
       return res.status(500).json({ error: error.message });
@@ -316,13 +323,8 @@ app.get("/api/facilities", async (req, res) => {
 });
 
 /**
- * Get containers currently at a facility or scheduled to arrive there.
+ * Get containers currently at a facility or scheduled to arrive there (next_facility_id).
  */
-function sameFacilityId(a, b) {
-  if (a == null || b == null) return false;
-  return String(a) === String(b);
-}
-
 app.get("/api/facilities/:id/containers", async (req, res) => {
   try {
     const facilityId = req.params.id;
@@ -338,36 +340,11 @@ app.get("/api/facilities/:id/containers", async (req, res) => {
       return res.status(500).json({ error: atFacilityError.message });
     }
 
-    const { data: lifecycleEvents, error: eventsError } = await supabase
-      .from("container_events")
-      .select("container_id, event_type, facility_id, created_at")
-      .in("event_type", ["FORWARDED", "RECEIVED", "RETURNED"])
-      .order("created_at", { ascending: false });
-
-    if (eventsError) {
-      return res.status(500).json({ error: eventsError.message });
-    }
-
-    const latestByContainer = new Map();
-    for (const event of lifecycleEvents ?? []) {
-      if (!latestByContainer.has(event.container_id)) {
-        latestByContainer.set(event.container_id, event);
-      }
-    }
-
-    const scheduledIds = [];
-    for (const event of latestByContainer.values()) {
-      if (
-        event.event_type === "FORWARDED" &&
-        sameFacilityId(event.facility_id, facilityId) &&
-        event.container_id
-      ) {
-        scheduledIds.push(event.container_id);
-      }
-    }
-
+    // Rely on containers.current_facility_id / next_facility_id only. Event-based "scheduled"
+    // logic incorrectly kept units on a facility's list after forward because FORWARDED rows
+    // store the origin facility_id, not the destination.
     const columnMatchIds = (atOrScheduled ?? []).map((row) => row.id);
-    const containerIds = [...new Set([...columnMatchIds, ...scheduledIds])];
+    const containerIds = [...new Set(columnMatchIds)];
     if (containerIds.length === 0) {
       return res.json({ count: 0, containers: [] });
     }
@@ -382,10 +359,110 @@ app.get("/api/facilities/:id/containers", async (req, res) => {
       return res.status(500).json({ error: containersError.message });
     }
 
-    res.json({ count: containers?.length ?? 0, containers: containers ?? [] });
+    const rows = containers ?? [];
+    const incomingDbIds = rows
+      .filter(
+        (c) =>
+          String(c.next_facility_id ?? "") === String(facilityId) &&
+          String(c.current_facility_id ?? "") !== String(facilityId),
+      )
+      .map((c) => c.id);
+
+    let incomingFromByContainerId = {};
+    if (incomingDbIds.length > 0) {
+      const { data: moveRows, error: moveErr } = await supabase
+        .from("container_events")
+        .select("container_id, facility_id, created_at")
+        .in("container_id", incomingDbIds)
+        .in("event_type", ["FORWARDED", "RETURNED"])
+        .order("created_at", { ascending: false });
+      if (!moveErr && moveRows?.length) {
+        incomingFromByContainerId = moveRows.reduce((acc, ev) => {
+          if (ev.container_id && !acc[ev.container_id]) {
+            acc[ev.container_id] = ev.facility_id ?? null;
+          }
+          return acc;
+        }, {});
+      }
+    }
+
+    const enriched = rows.map((c) => ({
+      ...c,
+      incoming_from_facility_id:
+        String(c.next_facility_id ?? "") === String(facilityId) &&
+        String(c.current_facility_id ?? "") !== String(facilityId)
+          ? incomingFromByContainerId[c.id] ?? null
+          : null,
+    }));
+
+    res.json({ count: enriched.length, containers: enriched });
   } catch (err) {
     console.error("Error fetching facility containers:", err);
     res.status(500).json({ error: "Failed to fetch facility containers" });
+  }
+});
+
+/**
+ * List addresses (manifest-linked locations) for receiver / forward destination pickers.
+ */
+app.get("/api/addresses", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("addresses")
+      .select("id, display_text, address_type")
+      .order("display_text", { ascending: true });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    const addresses = (data ?? []).map((a) => ({
+      id: a.id,
+      display_text: a.display_text ?? "",
+      address_type: a.address_type ?? null,
+    }));
+
+    res.json({ count: addresses.length, addresses });
+  } catch (err) {
+    console.error("Error fetching addresses:", err);
+    res.status(500).json({ error: "Failed to fetch addresses" });
+  }
+});
+
+/**
+ * Containers whose manifest references this address (origin, loading, discharge, or destination).
+ */
+app.get("/api/addresses/:id/containers", async (req, res) => {
+  try {
+    const addressId = req.params.id;
+    const idStr = String(addressId);
+    const idOk =
+      /^\d+$/.test(idStr) ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        idStr,
+      );
+    if (!idOk) {
+      return res.status(400).json({ error: "Invalid address id" });
+    }
+
+    const { data: containers, error } = await supabase
+      .from("containers")
+      .select(
+        "id, container_id, status, current_facility_id, next_facility_id, origin_address_id, port_loading_id, port_discharge_id, destination_id",
+      )
+      .or(
+        `origin_address_id.eq.${addressId},port_loading_id.eq.${addressId},port_discharge_id.eq.${addressId},destination_id.eq.${addressId}`,
+      )
+      .order("container_id", { ascending: true });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ count: containers?.length ?? 0, containers: containers ?? [] });
+  } catch (err) {
+    console.error("Error fetching address containers:", err);
+    res.status(500).json({ error: "Failed to fetch address containers" });
   }
 });
 
@@ -418,9 +495,10 @@ app.get("/api/containers/:id/events", async (req, res) => {
  */
 app.post("/api/containers/receive", async (req, res) => {
   try {
-    const { containerId, facilityId, notes } = req.body ?? {};
+    const { containerId, facilityId, addressId, notes } = req.body ?? {};
     const result = await receiveContainer(containerId, {
       facilityId: facilityId ?? null,
+      addressId: addressId ?? null,
       notes: notes ?? null,
       userId: req.user?.id ?? null,
     });
@@ -444,9 +522,12 @@ app.post("/api/containers/receive", async (req, res) => {
 
 app.post("/api/containers/forward", async (req, res) => {
   try {
-    const { containerId, facilityId, notes } = req.body ?? {};
+    const { containerId, facilityId, toAddressId, toFacilityId, notes } =
+      req.body ?? {};
     const result = await forwardContainer(containerId, {
       facilityId: facilityId ?? null,
+      toAddressId: toAddressId ?? null,
+      toFacilityId: toFacilityId ?? null,
       notes: notes ?? null,
       userId: req.user?.id ?? null,
     });
@@ -469,9 +550,12 @@ app.post("/api/containers/forward", async (req, res) => {
 
 app.post("/api/containers/return", async (req, res) => {
   try {
-    const { containerId, facilityId, notes } = req.body ?? {};
+    const { containerId, facilityId, addressId, notes, toFacilityId } =
+      req.body ?? {};
     const result = await returnContainer(containerId, {
       facilityId: facilityId ?? null,
+      addressId: addressId ?? null,
+      toFacilityId: toFacilityId ?? null,
       notes: notes ?? null,
       userId: req.user?.id ?? null,
     });

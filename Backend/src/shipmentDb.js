@@ -78,6 +78,11 @@ function pickContainerLocationField(container, keys) {
   return null;
 }
 
+function sameFacilityId(a, b) {
+  if (a == null || b == null) return false;
+  return String(a) === String(b);
+}
+
 /**
  * Map manifest ports to facility IDs: current ≈ port of loading, next ≈ port of discharge (else destination).
  */
@@ -112,11 +117,31 @@ async function resolveScheduleFacilitiesFromManifest(container) {
   return { current_facility_id, next_facility_id };
 }
 
+/** True while a facility forward is in transit (awaiting receive at next_facility_id). */
+async function isForwardedInTransit(containerDbId) {
+  const { data: row, error } = await supabase
+    .from("containers")
+    .select("status, next_facility_id")
+    .eq("id", containerDbId)
+    .maybeSingle();
+  if (error || !row) return false;
+  return row.status === "FORWARDED" && row.next_facility_id != null;
+}
+
 /**
  * When containers.status is missing in DB, still avoid overwriting manifest current_facility
  * after a RECEIVED/RETURNED event was recorded.
  */
 async function hasReceivedOrReturnedEvent(containerDbId) {
+  const { data: row, error: rowErr } = await supabase
+    .from("containers")
+    .select("status")
+    .eq("id", containerDbId)
+    .maybeSingle();
+  if (!rowErr && (row?.status === "RECEIVED" || row?.status === "RETURNED")) {
+    return true;
+  }
+
   const { data, error } = await supabase
     .from("container_events")
     .select("id")
@@ -258,14 +283,22 @@ export async function saveManifest(parsedData, manifestId = null) {
     }
 
     let preserveCurrentFacility = false;
+    let forwardedInTransit = false;
     if (existingContainer?.id) {
       preserveCurrentFacility = await hasReceivedOrReturnedEvent(
         existingContainer.id,
       );
+      forwardedInTransit = await isForwardedInTransit(existingContainer.id);
     }
 
-    if (!existingContainer || !preserveCurrentFacility) {
+    if (forwardedInTransit) {
+      delete containerRow.current_facility_id;
+      delete containerRow.next_facility_id;
+    } else if (!existingContainer || !preserveCurrentFacility) {
       containerRow.current_facility_id = schedule.current_facility_id;
+    } else {
+      delete containerRow.current_facility_id;
+      delete containerRow.next_facility_id;
     }
 
     let dbContainerId;
@@ -295,10 +328,12 @@ export async function saveManifest(parsedData, manifestId = null) {
           .maybeSingle();
         if (raced?.id) {
           const lock = await hasReceivedOrReturnedEvent(raced.id);
-          if (!lock) {
-            containerRow.current_facility_id = schedule.current_facility_id;
-          } else {
+          const transit = await isForwardedInTransit(raced.id);
+          if (transit || lock) {
             delete containerRow.current_facility_id;
+            delete containerRow.next_facility_id;
+          } else {
+            containerRow.current_facility_id = schedule.current_facility_id;
           }
           const { error: raceUpd } = await supabase
             .from("containers")
@@ -398,6 +433,31 @@ export async function logScanEvent(
   }
 }
 
+async function getAddressLabelById(addressId) {
+  if (addressId == null || addressId === "") return null;
+  const { data, error } = await supabase
+    .from("addresses")
+    .select("id, display_text")
+    .eq("id", addressId)
+    .maybeSingle();
+  if (error) {
+    console.warn("getAddressLabelById:", error.message);
+    return null;
+  }
+  const t = data?.display_text?.trim();
+  return t || String(addressId);
+}
+
+function mergeEventNotes(prefixLines, userNotes) {
+  const lines = prefixLines.filter((l) => l && String(l).trim() !== "");
+  const t =
+    userNotes != null && String(userNotes).trim() !== ""
+      ? String(userNotes).trim()
+      : "";
+  if (t) lines.push(t);
+  return lines.length ? lines.join("\n") : null;
+}
+
 async function resolveContainerByBusinessId(containerId) {
   const trimmed =
     containerId != null && typeof containerId === "string"
@@ -406,7 +466,7 @@ async function resolveContainerByBusinessId(containerId) {
 
   const { data: container, error } = await supabase
     .from("containers")
-    .select("id")
+    .select("id, current_facility_id, next_facility_id")
     .eq("container_id", trimmed)
     .maybeSingle();
 
@@ -420,11 +480,13 @@ async function writeContainerEvent(
   eventType,
   { facilityId, notes, userId } = {},
 ) {
+  const createdAt = new Date().toISOString();
   const eventRow = {
     container_id: containerDbId,
     event_type: eventType,
     facility_id: facilityId ?? null,
     notes: notes != null && notes !== "" ? String(notes) : null,
+    created_at: createdAt,
   };
 
   const eventRowWithUser = {
@@ -468,11 +530,17 @@ async function writeContainerEvent(
  * @returns {Promise<{ ok: true, dbId: string, event: object } | { ok: false, error: string }>}
  */
 export async function receiveContainer(containerId, options = {}) {
-  const { facilityId, notes, userId } = options;
+  const { facilityId, addressId, notes, userId } = options;
 
   try {
     if (!containerId || typeof containerId !== "string") {
       return { ok: false, error: "containerId is required" };
+    }
+    if (!facilityId && !addressId) {
+      return {
+        ok: false,
+        error: "facilityId or addressId is required to record where the container was received",
+      };
     }
 
     const { container, error: lookupError } =
@@ -481,10 +549,19 @@ export async function receiveContainer(containerId, options = {}) {
       return { ok: false, error: lookupError };
     }
 
+    const prefix = [];
+    if (addressId) {
+      const label = await getAddressLabelById(addressId);
+      if (label) {
+        prefix.push(`At address: ${label} (address_id=${addressId})`);
+      }
+    }
+    const mergedNotes = mergeEventNotes(prefix, notes);
+
     const { event, error: eventError } = await writeContainerEvent(
       container.id,
       "RECEIVED",
-      { facilityId, notes, userId },
+      { facilityId, notes: mergedNotes, userId },
     );
     if (eventError) {
       console.error("receiveContainer insert:", eventError);
@@ -495,6 +572,7 @@ export async function receiveContainer(containerId, options = {}) {
       updated_at: new Date().toISOString(),
       status: "RECEIVED",
       current_facility_id: facilityId ?? null,
+      next_facility_id: null,
     };
 
     const { error: updateError } = await supabase
@@ -546,23 +624,100 @@ export async function reportDamage(
 
 export async function forwardContainer(
   containerId,
-  { facilityId, notes, userId } = {},
+  { facilityId, toAddressId, toFacilityId, notes, userId } = {},
 ) {
   try {
+    const hasFacilityDest =
+      toFacilityId != null && String(toFacilityId).trim() !== "";
+    if (!toAddressId && !hasFacilityDest) {
+      return {
+        ok: false,
+        error:
+          "toAddressId or toFacilityId is required — choose a destination address or facility",
+      };
+    }
+
     const { container, error: lookupError } =
       await resolveContainerByBusinessId(containerId);
     if (lookupError) {
       return { ok: false, error: lookupError };
     }
 
+    if (hasFacilityDest) {
+      if (sameFacilityId(toFacilityId, facilityId)) {
+        return {
+          ok: false,
+          error:
+            "Cannot forward to the same facility you are forwarding from. Choose a different destination.",
+        };
+      }
+      if (sameFacilityId(toFacilityId, container.current_facility_id)) {
+        return {
+          ok: false,
+          error: "Container is already at that facility.",
+        };
+      }
+    }
+
+    const destLabel = toAddressId
+      ? await getAddressLabelById(toAddressId)
+      : null;
+
+    const prefix = [];
+    if (destLabel) {
+      prefix.push(
+        `Forward to address: ${destLabel} (address_id=${toAddressId})`,
+      );
+    }
+    if (hasFacilityDest) {
+      prefix.push(`Forward to facility_id=${toFacilityId}`);
+    }
+    const mergedNotes = mergeEventNotes(prefix, notes);
+
     const { event, error: eventError } = await writeContainerEvent(
       container.id,
       "FORWARDED",
-      { facilityId, notes, userId },
+      { facilityId, notes: mergedNotes, userId },
     );
     if (eventError) {
       console.error("forwardContainer insert:", eventError);
       return { ok: false, error: eventError };
+    }
+
+    let scheduleUpdate;
+    if (hasFacilityDest) {
+      // In transit to destination; destination marks RECEIVED when they confirm receipt.
+      scheduleUpdate = {
+        updated_at: new Date().toISOString(),
+        status: "FORWARDED",
+        current_facility_id: null,
+        next_facility_id: toFacilityId,
+      };
+    } else {
+      let nextResolved = null;
+      if (destLabel) {
+        const facList = await getFacilitiesForMatching();
+        const guessed = matchFacilityIdForAddress(destLabel, facList);
+        if (guessed != null) nextResolved = guessed;
+      }
+      scheduleUpdate = {
+        updated_at: new Date().toISOString(),
+        status: "FORWARDED",
+        current_facility_id: null,
+        next_facility_id: nextResolved,
+      };
+    }
+
+    const { error: scheduleErr } = await supabase
+      .from("containers")
+      .update(scheduleUpdate)
+      .eq("id", container.id);
+
+    if (scheduleErr) {
+      console.warn(
+        "forwardContainer: event saved but container schedule update failed:",
+        scheduleErr.message,
+      );
     }
 
     return { ok: true, dbId: container.id, event };
@@ -574,30 +729,73 @@ export async function forwardContainer(
 
 export async function returnContainer(
   containerId,
-  { facilityId, notes, userId } = {},
+  { facilityId, addressId, toFacilityId, notes, userId } = {},
 ) {
   try {
+    if (!facilityId && !addressId) {
+      return {
+        ok: false,
+        error:
+          "facilityId or addressId is required to record where the container was returned",
+      };
+    }
+
+    const hasToFacility =
+      toFacilityId != null && String(toFacilityId).trim() !== "";
+    const inTransitReturn =
+      hasToFacility &&
+      !sameFacilityId(toFacilityId, facilityId) &&
+      !addressId;
+
+    if (addressId && hasToFacility) {
+      return {
+        ok: false,
+        error:
+          "Use either an address return or a return to another facility, not both",
+      };
+    }
+
     const { container, error: lookupError } =
       await resolveContainerByBusinessId(containerId);
     if (lookupError) {
       return { ok: false, error: lookupError };
     }
 
+    const prefix = [];
+    if (addressId) {
+      const label = await getAddressLabelById(addressId);
+      if (label) {
+        prefix.push(`Return at address: ${label} (address_id=${addressId})`);
+      }
+    }
+    if (inTransitReturn) {
+      prefix.push(`Return in transit toward facility_id=${toFacilityId}`);
+    }
+    const mergedNotes = mergeEventNotes(prefix, notes);
+
     const { event, error: eventError } = await writeContainerEvent(
       container.id,
       "RETURNED",
-      { facilityId, notes, userId },
+      { facilityId, notes: mergedNotes, userId },
     );
     if (eventError) {
       console.error("returnContainer insert:", eventError);
       return { ok: false, error: eventError };
     }
 
-    const updatePayload = {
-      updated_at: new Date().toISOString(),
-      status: "RETURNED",
-      current_facility_id: facilityId ?? null,
-    };
+    const updatePayload = inTransitReturn
+      ? {
+          updated_at: new Date().toISOString(),
+          status: "FORWARDED",
+          current_facility_id: null,
+          next_facility_id: toFacilityId,
+        }
+      : {
+          updated_at: new Date().toISOString(),
+          status: "RETURNED",
+          current_facility_id: facilityId ?? null,
+          next_facility_id: null,
+        };
     const { error: updateError } = await supabase
       .from("containers")
       .update(updatePayload)

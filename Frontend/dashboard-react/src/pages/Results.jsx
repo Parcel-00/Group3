@@ -104,15 +104,31 @@ function Results() {
                 <strong>Timestamp:</strong> {formatTimestamp(scan.timestamp)}
               </div>
 
-              {shipmentData?.metadata?.damageDetection?.performed && (
-                <div className="msg">
-                  <strong>Damage Detection Results:</strong><br />
-                  <strong>Status:</strong> {shipmentData.metadata.damageDetection.result.isDamaged ? "Damaged (black marks detected)" : "No damage detected"}<br />
-                  <strong>Damage Probability:</strong> {Math.round(shipmentData.metadata.damageDetection.result.damageProbability * 100)}%<br />
-                  <strong>Confidence:</strong> {Math.round(shipmentData.metadata.damageDetection.result.confidence * 100)}%<br />
-                  <strong>Model:</strong> {shipmentData.metadata.damageDetection.result.modelUsed}
-                </div>
-              )}
+                {shipmentData?.metadata?.damageDetection?.performed && (
+                  <div className="msg">
+                    <strong>Damage Detection Results:</strong><br />
+                    <strong>Status:</strong> {shipmentData.metadata.damageDetection.result.isDamaged ? "Damaged (black marks detected)" : "No damage detected"}<br />
+                    <strong>Damage Probability:</strong> {Math.round(shipmentData.metadata.damageDetection.result.damageProbability * 100)}%<br />
+                    <strong>Confidence:</strong> {Math.round(shipmentData.metadata.damageDetection.result.confidence * 100)}%<br />
+                    <strong>Model:</strong> {shipmentData.metadata.damageDetection.result.modelUsed}
+                    {shipmentData.metadata.damageDetection.result.error ? (
+                      <>
+                        <br />
+                        <span className="hint">
+                          Note: {shipmentData.metadata.damageDetection.result.error}
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
+                )}
+                {shipmentData?.metadata?.damageDetection &&
+                !shipmentData.metadata.damageDetection.performed ? (
+                  <div className="msg">
+                    <strong>Damage scan:</strong>{" "}
+                    {shipmentData.metadata.damageDetection.reason ??
+                      "Automated damage detection did not run."}
+                  </div>
+                ) : null}
 
               <div className="row">
                 <button
