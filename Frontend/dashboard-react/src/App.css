@@ -470,11 +470,24 @@ input:focus {
   gap: 18px;
 }
 
-.shipment-status-layout {
+/*.shipment-status-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.8fr);
   gap: 18px;
   align-items: start;
+} */
+
+ .shipment-status-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Desktop */
+@media (min-width: 900px) {
+  .shipment-status-layout {
+    grid-template-columns: 2fr 1fr;
+  }
 }
 
 .shipment-status-panel {
@@ -485,13 +498,26 @@ input:focus {
   padding: 22px;
 }
 
-.shipment-status-hero {
+/*.shipment-status-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
   gap: 18px;
   align-items: center;
   background:
     linear-gradient(180deg, rgba(250, 253, 255, 0.96), rgba(236, 244, 255, 0.92));
+}
+    */
+    .shipment-status-hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Desktop only */
+@media (min-width: 900px) {
+  .shipment-status-hero {
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  }
 }
 
 .shipment-status-eyebrow {
@@ -534,6 +560,19 @@ input:focus {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+/* Tablet */
+@media (min-width: 600px) {
+  .shipment-metric-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Desktop */
+@media (min-width: 900px) {
+  .shipment-metric-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .shipment-metric {

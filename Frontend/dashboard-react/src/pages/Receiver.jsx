@@ -894,8 +894,7 @@ function Receiver() {
                 {showScanner ? (
                   <div className="card" style={{ marginTop: "12px" }}>
                     <h4>Scan QR code</h4>
-                    <div id="qr-reader" style={{ width: "300px" }}></div>
-                  </div>
+                    <div id="qr-reader" style={{ width: "100%", maxWidth: "320px" }}></div>                  </div>
                 ) : null}
                 {scanError ? <div className="msg bad">{scanError}</div> : null}
               </div>
