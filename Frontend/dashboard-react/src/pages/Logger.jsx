@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import TopNav from "../components/TopNav";
 import { supabase } from "../supabaseClient";
+import { apiUrl, parseJsonResponse } from "../utils/http";
 
 function pillClass(status) {
   if (status === "SUCCESS") return "pill pill--ok";
@@ -21,7 +22,7 @@ function Logger() {
   const [error, setError] = useState("");
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -29,10 +30,10 @@ function Logger() {
       const token = data?.session?.access_token;
       if (!token) throw new Error("You must be signed in.");
 
-      const response = await fetch(`${API_BASE_URL}/api/shipments/history`, {
+      const response = await fetch(apiUrl(API_BASE_URL, "shipments/history"), {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const payload = await response.json();
+      const payload = await parseJsonResponse(response);
       if (!response.ok) {
         throw new Error(payload?.error || "Failed to load shipment history.");
       }
@@ -53,11 +54,11 @@ function Logger() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL]);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   return (
     <main className="shell shell-wide">

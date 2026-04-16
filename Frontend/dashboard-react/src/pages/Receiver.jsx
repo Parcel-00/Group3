@@ -4,6 +4,7 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import TopNav from "../components/TopNav";
 import { supabase } from "../supabaseClient";
 import { addScan } from "../data/scanStore";
+import { apiUrl, parseJsonResponse } from "../utils/http";
 
 function normalizeStatus(shipmentData) {
   const status = shipmentData?.metadata?.processingStatus;
@@ -260,16 +261,16 @@ function Receiver() {
       if (!token) throw new Error("You must be signed in.");
 
       const [facilitiesRes, addressesRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/facilities`, {
+        fetch(apiUrl(API_BASE_URL, "facilities"), {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`${API_BASE_URL}/api/addresses`, {
+        fetch(apiUrl(API_BASE_URL, "addresses"), {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
 
-      const facilitiesPayload = await facilitiesRes.json();
-      const addressesPayload = await addressesRes.json();
+      const facilitiesPayload = await parseJsonResponse(facilitiesRes);
+      const addressesPayload = await parseJsonResponse(addressesRes);
 
       if (!facilitiesRes.ok) {
         throw new Error(facilitiesPayload?.error || "Failed loading facilities.");
@@ -307,12 +308,12 @@ function Receiver() {
       if (!token) throw new Error("You must be signed in.");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/facilities/${facilityId}/containers`,
+        apiUrl(API_BASE_URL, `facilities/${facilityId}/containers`),
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      const payload = await response.json();
+      const payload = await parseJsonResponse(response);
       if (!response.ok) {
         throw new Error(payload?.error || "Failed loading containers.");
       }
@@ -376,14 +377,15 @@ function Receiver() {
           if (!token) throw new Error("You must be signed in.");
 
           const lookupRes = await fetch(
-            `${API_BASE_URL}/api/containers?container_id=${encodeURIComponent(
-              containerBusinessId,
-            )}`,
+            apiUrl(
+              API_BASE_URL,
+              `containers?container_id=${encodeURIComponent(containerBusinessId)}`,
+            ),
             {
               headers: { Authorization: `Bearer ${token}` },
             },
           );
-          const lookupPayload = await lookupRes.json();
+          const lookupPayload = await parseJsonResponse(lookupRes);
           if (lookupRes.ok) {
             selected = (lookupPayload?.containers ?? []).find(
               (row) => row.container_id === containerBusinessId,
@@ -401,12 +403,12 @@ function Receiver() {
         if (!token) throw new Error("You must be signed in.");
 
         const response = await fetch(
-          `${API_BASE_URL}/api/containers/${selected.id}/events`,
+          apiUrl(API_BASE_URL, `containers/${selected.id}/events`),
           {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
-        const payload = await response.json();
+        const payload = await parseJsonResponse(response);
         if (!response.ok) {
           throw new Error(payload?.error || "Failed loading container events.");
         }
@@ -455,13 +457,13 @@ function Receiver() {
         formData.append("containerId", selectedContainerId.trim());
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/shipments/process`, {
+      const response = await fetch(apiUrl(API_BASE_URL, "shipments/process"), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
-      const payload = await response.json();
+      const payload = await parseJsonResponse(response);
       if (!response.ok) {
         throw new Error(
           payload?.message || payload?.error || "Scan request failed.",
@@ -503,7 +505,7 @@ function Receiver() {
       const { data } = await supabase.auth.getSession();
       const token = data?.session?.access_token;
       if (!token) throw new Error("You must be signed in.");
-      const response = await fetch(`${API_BASE_URL}/api/containers/${action}`, {
+      const response = await fetch(apiUrl(API_BASE_URL, `containers/${action}`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -511,7 +513,7 @@ function Receiver() {
         },
         body: JSON.stringify(body),
       });
-      const payload = await response.json();
+      const payload = await parseJsonResponse(response);
       if (!response.ok) {
         throw new Error(payload?.error || `Failed to ${action} container.`);
       }

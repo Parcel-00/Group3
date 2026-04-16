@@ -9,6 +9,7 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import { useEffect } from "react";
 
 import { supabase } from "../supabaseClient";
+import { apiUrl, parseJsonResponse } from "../utils/http";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -72,7 +73,7 @@ function Scan() {
         formData.append("containerId", containerId.trim());
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/shipments/process`, {
+      const response = await fetch(apiUrl(API_BASE_URL, "shipments/process"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -80,7 +81,7 @@ function Scan() {
         body: formData,
       });
 
-      const payload = await response.json();
+      const payload = await parseJsonResponse(response);
       if (!response.ok) {
         throw new Error(
           payload?.message || payload?.error || "Scan request failed."
